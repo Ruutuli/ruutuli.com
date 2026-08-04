@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  getGalleryAdminImageSrc,
+  buildImageLoadAttempts,
   normalizeImageUrl,
   parseImageUrlsFromText,
   extractFirstImageUrl,
@@ -20,16 +20,27 @@ function AdminThumbnail({
   alt: string;
   className?: string;
 }) {
+  const loadAttempts = buildImageLoadAttempts(src);
+  const [attemptIndex, setAttemptIndex] = useState(0);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    setAttemptIndex(0);
     setFailed(false);
   }, [src]);
 
-  if (!src?.trim() || isCosplayPlaceholderImage(src) || failed) {
+  if (!src?.trim() || isCosplayPlaceholderImage(src) || loadAttempts.length === 0) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-closet-blush px-2 text-center text-[10px] font-medium text-closet-brown-light">
-        {failed ? "Preview failed" : "No preview"}
+        No preview
+      </div>
+    );
+  }
+
+  if (failed || attemptIndex >= loadAttempts.length) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-closet-blush px-2 text-center text-[10px] font-medium text-closet-brown-light">
+        Preview failed
       </div>
     );
   }
@@ -37,12 +48,19 @@ function AdminThumbnail({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={getGalleryAdminImageSrc(src)}
+      src={loadAttempts[attemptIndex]!}
       alt={alt}
       className={className}
       loading="lazy"
       decoding="async"
-      onError={() => setFailed(true)}
+      referrerPolicy="no-referrer"
+      onError={() => {
+        setAttemptIndex((current) => {
+          const next = current + 1;
+          if (next >= loadAttempts.length) setFailed(true);
+          return next;
+        });
+      }}
     />
   );
 }

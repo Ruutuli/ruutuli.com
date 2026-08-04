@@ -65,6 +65,12 @@ export interface Cosplay {
   sortOrder?: number;
 }
 
+export function dedupeCosplaysById(cosplays: Cosplay[]): Cosplay[] {
+  return Array.from(
+    new Map(cosplays.filter((c) => c.id?.trim()).map((c) => [c.id, c])).values(),
+  );
+}
+
 export function getCosplayPartsPercent(cosplay: Cosplay): number | null {
   if (cosplay.status === "retired") return null;
   if (!cosplay.parts?.length) return null;

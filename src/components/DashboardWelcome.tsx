@@ -19,17 +19,15 @@ export default function DashboardWelcome(_props: DashboardWelcomeProps) {
     <section className="grid items-center gap-6 lg:grid-cols-2 lg:gap-8">
       <div className="animate-fade-up text-center lg:text-left">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-closet-rose">
-          Cosplay. Create. Connect.
+          {siteConfig.tagline}
         </p>
         <h1 className="mt-2.5 font-display text-4xl font-bold leading-[1.1] tracking-tight text-closet-brown sm:text-5xl lg:text-[3.1rem]">
-          Build boldly.{" "}
-          <span className="text-closet-brown">
-            Wear proudly<span className="animate-sparkle text-closet-rose">.</span>
-          </span>
+          {siteConfig.name}
+          <span className="animate-sparkle text-closet-rose">.</span>
         </h1>
 
         <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-closet-brown-light sm:text-lg lg:mx-0">
-          A modern home for every costume, convention, and work in progress.
+          {siteConfig.bio}
         </p>
 
         <div className="mt-5 flex justify-center lg:justify-start">

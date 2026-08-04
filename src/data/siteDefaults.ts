@@ -12,10 +12,10 @@ export const siteAssets = {
 } as const;
 
 export const defaultSiteSettings: SiteSettings = {
-  name: "Ruu Cosplay",
+  name: "Ruutuli Cosplay",
   displayName: "Ruu",
-  tagline: "Cosplay. Create. Connect.",
-  bio: "Cosplay, craftsmanship, and con adventures by Ruu — from fabric and foam to final photoshoots.",
+  tagline: "cosplay portfolio",
+  bio: "The place where I put things and pretend I know what I'm doing.",
   socials: {
     instagram: "https://www.instagram.com/ruutuli/",
     twitter: "https://x.com/ruutuli",

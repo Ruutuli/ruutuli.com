@@ -38,6 +38,7 @@ function parseFilters(raw: GalleryListFilters | undefined): GalleryListFilters |
     q: typeof raw.q === "string" ? raw.q : undefined,
     published: published && published !== "all" ? published : undefined,
     hideLivePhotos: raw.hideLivePhotos === true,
+    liveOnly: raw.liveOnly === true,
     cosplayId: typeof raw.cosplayId === "string" ? raw.cosplayId : undefined,
     convention: typeof raw.convention === "string" ? raw.convention : undefined,
     photographer: typeof raw.photographer === "string" ? raw.photographer : undefined,
@@ -59,16 +60,14 @@ export async function POST(request: NextRequest) {
   if (!body) return badRequest("Invalid body");
 
   const cosplayIds = Array.isArray(body.cosplayIds)
-    ? [...new Set(body.cosplayIds.filter((id): id is string => typeof id === "string" && id.trim()))]
+    ? [...new Set(body.cosplayIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0))]
     : [];
 
   const mode: BulkTagMode =
     body.mode === "remove" || body.mode === "set" || body.mode === "add" ? body.mode : "add";
 
   const gallerySection =
-    body.gallerySection === "build" ||
-    body.gallerySection === "convention" ||
-    body.gallerySection === "retired"
+    body.gallerySection === "build" || body.gallerySection === "convention"
       ? body.gallerySection
       : body.gallerySection === null
         ? null
@@ -85,7 +84,7 @@ export async function POST(request: NextRequest) {
   }
 
   let itemIds = Array.isArray(body.itemIds)
-    ? [...new Set(body.itemIds.filter((id): id is string => typeof id === "string" && id.trim()))]
+    ? [...new Set(body.itemIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0))]
     : [];
 
   if (itemIds.length === 0 && body.filters) {

@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     q: params.get("q") ?? undefined,
     published: published && published !== "all" ? published : undefined,
     hideLivePhotos: params.get("hideLive") === "1" || params.get("hideLive") === "true",
+    liveOnly: params.get("liveOnly") === "1" || params.get("liveOnly") === "true",
     cosplayId: params.get("cosplayId") ?? undefined,
     convention: params.get("convention") ?? undefined,
     photographer: params.get("photographer") ?? undefined,

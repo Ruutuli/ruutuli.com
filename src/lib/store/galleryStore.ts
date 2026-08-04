@@ -156,12 +156,12 @@ function buildGalleryMongoFilter(filters: GalleryListFilters): Filter<GalleryDoc
 
   if (filters.gallerySection === "build") conditions.push({ gallerySection: "build" });
   if (filters.gallerySection === "convention") conditions.push({ gallerySection: "convention" });
-  if (filters.gallerySection === "retired") conditions.push({ gallerySection: "retired" });
   if (filters.gallerySection === "unset") {
     conditions.push({ $or: [{ gallerySection: null }, { gallerySection: { $exists: false } }] });
   }
 
   if (filters.hideLivePhotos) conditions.push({ published: { $ne: true } });
+  if (filters.liveOnly) conditions.push({ published: true });
 
   switch (filters.published) {
     case "published":
@@ -344,7 +344,9 @@ async function rememberGalleryVocabulary(entries: {
 }
 
 async function getGalleryVocabulary(): Promise<{ conventions: string[]; photographers: string[] }> {
-  const collection = await getCollection<{ type: GalleryVocabularyType; name: string }>(COLLECTIONS.galleryVocabulary);
+  const collection = await getCollection<{ type: GalleryVocabularyType; name: string }>(
+    COLLECTIONS.galleryVocabulary,
+  );
   const docs = await collection.find().toArray();
   const conventions: string[] = [];
   const photographers: string[] = [];
@@ -352,9 +354,10 @@ async function getGalleryVocabulary(): Promise<{ conventions: string[]; photogra
     if (doc.type === "convention") conventions.push(doc.name);
     else if (doc.type === "photographer") photographers.push(doc.name);
   }
+  const sortNames = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: "base" });
   return {
-    conventions: [...new Set(conventions)].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
-    photographers: [...new Set(photographers)].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
+    conventions: [...new Set(conventions)].sort(sortNames),
+    photographers: [...new Set(photographers)].sort(sortNames),
   };
 }
 

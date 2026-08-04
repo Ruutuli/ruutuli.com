@@ -26,13 +26,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CosplayBoardPage({ params }: PageProps) {
   const { id } = await params;
-  const [cosplay, allTasks, photoCredits, buildPhotoUrls, conventionPhotoUrls, retiredPhotoUrls] = await Promise.all([
+  const [cosplay, allTasks, photoCredits, buildPhotoUrls, conventionPhotoUrls] = await Promise.all([
     getCosplayById(id),
     getTasks(),
     getGalleryPhotoCreditsForCosplay(id),
     getGallerySectionPhotosForCosplay(id, "build"),
     getGallerySectionPhotosForCosplay(id, "convention"),
-    getGallerySectionPhotosForCosplay(id, "retired"),
   ]);
 
   if (!cosplay) notFound();
@@ -48,7 +47,6 @@ export default async function CosplayBoardPage({ params }: PageProps) {
           photoCredits={photoCredits}
           buildPhotoUrls={buildPhotoUrls}
           conventionPhotoUrls={conventionPhotoUrls}
-          retiredPhotoUrls={retiredPhotoUrls}
         />
       </div>
     </SiteShell>

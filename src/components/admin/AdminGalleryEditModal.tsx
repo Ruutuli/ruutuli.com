@@ -117,18 +117,19 @@ export default function AdminGalleryEditModal({
   }, [item.id, editConvention, editPhotographer, editTags, editNotes]);
 
   const cosplayMap = useMemo(() => new Map(cosplays.map((c) => [c.id, c])), [cosplays]);
+  const uniqueCosplays = useMemo(() => Array.from(cosplayMap.values()), [cosplayMap]);
   const suggested = useMemo(
-    () => suggestCosplaysFromFilename(item.name, cosplays).filter((c) => !editCosplayIds.includes(c.id)),
-    [item.name, cosplays, editCosplayIds],
+    () => suggestCosplaysFromFilename(item.name, uniqueCosplays).filter((c) => !editCosplayIds.includes(c.id)),
+    [item.name, uniqueCosplays, editCosplayIds],
   );
   const linkedCosplays = useMemo(
-    () => editCosplayIds.map((id) => cosplayMap.get(id)).filter(Boolean) as Cosplay[],
+    () => [...new Set(editCosplayIds)].map((id) => cosplayMap.get(id)).filter(Boolean) as Cosplay[],
     [editCosplayIds, cosplayMap],
   );
   const browseCosplays = useMemo(() => {
-    const pool = cosplayQuery.trim() || showAllCosplays ? filterCosplaysByQuery(cosplays, cosplayQuery) : [];
+    const pool = cosplayQuery.trim() || showAllCosplays ? filterCosplaysByQuery(uniqueCosplays, cosplayQuery) : [];
     return pool.filter((c) => !editCosplayIds.includes(c.id));
-  }, [cosplays, cosplayQuery, showAllCosplays, editCosplayIds]);
+  }, [uniqueCosplays, cosplayQuery, showAllCosplays, editCosplayIds]);
 
   const datalistId = `gallery-conventions-${item.id}`;
   const photographerDatalistId = `gallery-photographers-${item.id}`;
@@ -182,7 +183,7 @@ export default function AdminGalleryEditModal({
               onChange={(e) => onPublishedChange(e.target.checked)}
               className="h-4 w-4 rounded border-closet-pink text-closet-rose"
             />
-            Published on site
+            Live on site
           </label>
 
           <div className="rounded-xl border border-closet-pink/50 bg-white p-3">
@@ -222,7 +223,7 @@ export default function AdminGalleryEditModal({
               Page gallery
             </p>
             <div className="grid gap-2">
-              {(["build", "convention", "retired"] as const).map((section) => {
+              {(["build", "convention"] as const).map((section) => {
                 const active = editGallerySection === section;
                 return (
                   <button
@@ -234,9 +235,7 @@ export default function AdminGalleryEditModal({
                       active
                         ? section === "build"
                           ? "border-sky-400 bg-sky-50 text-sky-900"
-                          : section === "convention"
-                            ? "border-violet-400 bg-violet-50 text-violet-900"
-                            : "border-zinc-400 bg-zinc-50 text-zinc-800"
+                          : "border-violet-400 bg-violet-50 text-violet-900"
                         : "border-closet-pink/50 bg-closet-blush/20 text-closet-brown-light hover:border-closet-pink"
                     }`}
                   >
@@ -247,7 +246,7 @@ export default function AdminGalleryEditModal({
               })}
             </div>
             <p className="mt-2 text-[10px] leading-snug text-closet-brown-light">
-              Build = progress shots · Convention = con photos · Retired = past costume, no longer owned
+              Build = progress & WIP shots · Gallery = finished cosplay photos
             </p>
           </div>
         </div>

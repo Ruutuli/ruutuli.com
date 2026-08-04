@@ -80,6 +80,7 @@ export default function AdminGalleryManager({
   const [imageTypeFilter, setImageTypeFilter] = useState<GalleryImageTypeFilter>("all");
   const [gallerySectionFilter, setGallerySectionFilter] = useState<GallerySectionFilter>("all");
   const [hideLivePhotos, setHideLivePhotos] = useState(false);
+  const [liveOnly, setLiveOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState("");
@@ -112,6 +113,7 @@ export default function AdminGalleryManager({
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const editingIdRef = useRef<string | null>(null);
+  const publishedAtOpenRef = useRef(false);
   const setPhotoRequestRef = useRef(0);
   const loadAbortRef = useRef<AbortController | null>(null);
   const filterSignatureRef = useRef("");
@@ -168,6 +170,7 @@ export default function AdminGalleryManager({
         debouncedQuery,
         publishedFilter,
         hideLivePhotos,
+        liveOnly,
         cosplayFilter,
         conventionFilter,
         photographerFilter,
@@ -181,6 +184,7 @@ export default function AdminGalleryManager({
       debouncedQuery,
       publishedFilter,
       hideLivePhotos,
+      liveOnly,
       cosplayFilter,
       conventionFilter,
       photographerFilter,
@@ -219,6 +223,7 @@ export default function AdminGalleryManager({
     if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
     if (publishedFilter !== "all") params.set("published", publishedFilter);
     if (hideLivePhotos) params.set("hideLive", "1");
+    if (liveOnly) params.set("liveOnly", "1");
     if (cosplayFilter) params.set("cosplayId", cosplayFilter);
     if (conventionFilter) params.set("convention", conventionFilter);
     if (photographerFilter) params.set("photographer", photographerFilter);
@@ -253,7 +258,7 @@ export default function AdminGalleryManager({
         setMessage("Could not load gallery");
       }
     }
-  }, [page, limit, debouncedQuery, publishedFilter, hideLivePhotos, cosplayFilter, conventionFilter, photographerFilter, folderFilter, sortBy, imageTypeFilter, gallerySectionFilter, filterSignature]);
+  }, [page, limit, debouncedQuery, publishedFilter, hideLivePhotos, liveOnly, cosplayFilter, conventionFilter, photographerFilter, folderFilter, sortBy, imageTypeFilter, gallerySectionFilter, filterSignature]);
 
   useEffect(() => {
     void loadItems();
@@ -261,13 +266,14 @@ export default function AdminGalleryManager({
 
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [page, debouncedQuery, publishedFilter, hideLivePhotos, cosplayFilter, conventionFilter, photographerFilter, folderFilter, sortBy, imageTypeFilter, gallerySectionFilter, limit]);
+  }, [page, debouncedQuery, publishedFilter, hideLivePhotos, liveOnly, cosplayFilter, conventionFilter, photographerFilter, folderFilter, sortBy, imageTypeFilter, gallerySectionFilter, limit]);
 
   const currentListFilters = useMemo(
     () => ({
       q: debouncedQuery.trim() || undefined,
       published: publishedFilter !== "all" ? publishedFilter : undefined,
       hideLivePhotos: hideLivePhotos || undefined,
+      liveOnly: liveOnly || undefined,
       cosplayId: cosplayFilter || undefined,
       convention: conventionFilter || undefined,
       photographer: photographerFilter || undefined,
@@ -280,6 +286,7 @@ export default function AdminGalleryManager({
       debouncedQuery,
       publishedFilter,
       hideLivePhotos,
+      liveOnly,
       cosplayFilter,
       conventionFilter,
       photographerFilter,
@@ -294,6 +301,60 @@ export default function AdminGalleryManager({
     () => filterCosplaysByQuery(uniqueCosplays, bulkTagQuery),
     [uniqueCosplays, bulkTagQuery],
   );
+
+  function mergeVisibleGalleryItem(
+    prev: GalleryItem[],
+    item: GalleryItem,
+  ): { items: GalleryItem[]; totalDelta: number } {
+    const wasVisible = prev.some((i) => i.id === item.id);
+    const shouldHide = (hideLivePhotos && item.published) || (liveOnly && !item.published);
+
+    if (shouldHide) {
+      return {
+        items: prev.filter((i) => i.id !== item.id),
+        totalDelta: wasVisible ? -1 : 0,
+      };
+    }
+
+    if (wasVisible) {
+      return {
+        items: prev.map((i) => (i.id === item.id ? item : i)),
+        totalDelta: 0,
+      };
+    }
+
+    if (liveOnly && !item.published) {
+      return { items: prev, totalDelta: 0 };
+    }
+
+    return {
+      items: [...prev, item],
+      totalDelta: 1,
+    };
+  }
+
+  function applyVisibleGalleryItem(item: GalleryItem) {
+    let totalDelta = 0;
+    setItems((prev) => {
+      const merged = mergeVisibleGalleryItem(prev, item);
+      totalDelta = merged.totalDelta;
+      return merged.items;
+    });
+    if (totalDelta !== 0) {
+      setTotal((prev) => Math.max(0, prev + totalDelta));
+    }
+  }
+
+  const refreshFacetsFromServer = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/gallery/items?limit=1&page=1");
+      if (!res.ok) return;
+      const data = (await res.json()) as GalleryListResponse;
+      if (data.facets) setFacets(data.facets);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   function exitSelectMode() {
     setSelectMode(false);
@@ -473,6 +534,7 @@ export default function AdminGalleryManager({
       tags.length === editing.tags.length && tags.every((tag, index) => tag === editing.tags[index]);
 
     return (
+      editing.published !== publishedAtOpenRef.current ||
       !tagsEqual ||
       editNotes !== (editing.notes ?? "") ||
       editConvention.trim() !== (editing.convention ?? "") ||
@@ -526,7 +588,7 @@ export default function AdminGalleryManager({
       published: addedCharacter ? true : editing.published,
     };
 
-    setItems((prev) => prev.map((i) => (i.id === optimistic.id ? optimistic : i)));
+    applyVisibleGalleryItem(optimistic);
     if (options?.closeAfter) {
       setPhotoRequestRef.current += 1;
       setSettingPhoto(null);
@@ -546,7 +608,9 @@ export default function AdminGalleryManager({
       if (!res.ok) throw new Error("save failed");
 
       const updated = (await res.json()) as GalleryItem;
-      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+      applyVisibleGalleryItem(updated);
+      publishedAtOpenRef.current = updated.published;
+      void refreshFacetsFromServer();
       if (updated.published !== snapshot.published) {
         setStats((prev) => ({
           ...prev,
@@ -585,6 +649,7 @@ export default function AdminGalleryManager({
     setSettingPhoto(null);
     const linkedEvent = item.eventId ? events.find((e) => e.id === item.eventId) : undefined;
     setEditing(item);
+    publishedAtOpenRef.current = item.published;
     setEditTags(item.tags.join(", "));
     setEditNotes(item.notes ?? "");
     setEditCosplayIds([...item.cosplayIds]);
@@ -680,7 +745,7 @@ export default function AdminGalleryManager({
       if (requestId !== setPhotoRequestRef.current) return;
 
       setCosplays((prev) => prev.map((c) => (c.id === data.cosplay.id ? data.cosplay : c)));
-      setItems((prev) => prev.map((i) => (i.id === data.galleryItem.id ? data.galleryItem : i)));
+      applyVisibleGalleryItem(data.galleryItem);
 
       if (editingIdRef.current === galleryItemId) {
         setEditing(data.galleryItem);
@@ -727,7 +792,8 @@ export default function AdminGalleryManager({
     setEditConvention(item.convention ?? "");
     setEditPhotographer(item.photographer ?? "");
     setMessage("Parsed convention & photographer from filename");
-    setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+    applyVisibleGalleryItem(item);
+    void refreshFacetsFromServer();
   }
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -737,14 +803,17 @@ export default function AdminGalleryManager({
     if (publishedFilter !== "all") {
       const labels: Record<GalleryPublishedFilter, string> = {
         all: "",
-        published: "Published",
-        unpublished: "Draft",
-        unlinked: "Unlinked drafts",
+        published: "Live",
+        unpublished: "Not live",
+        unlinked: "Unlinked (not live)",
       };
       chips.push({ key: "status", label: labels[publishedFilter], onClear: () => setPublishedFilter("all") });
     }
     if (hideLivePhotos) {
       chips.push({ key: "hideLive", label: "Hiding live", onClear: () => toggleHideLivePhotos(false) });
+    }
+    if (liveOnly) {
+      chips.push({ key: "liveOnly", label: "Live only", onClear: () => toggleLiveOnly(false) });
     }
     if (cosplayFilter) {
       const name = cosplayMap.get(cosplayFilter)?.character ?? cosplayFilter;
@@ -775,8 +844,7 @@ export default function AdminGalleryManager({
     if (gallerySectionFilter !== "all") {
       const labels: Record<Exclude<GallerySectionFilter, "all">, string> = {
         build: "Build gallery",
-        convention: "Convention gallery",
-        retired: "Retired gallery",
+        convention: "Gallery",
         unset: "No section",
       };
       chips.push({
@@ -792,6 +860,7 @@ export default function AdminGalleryManager({
   }, [
     publishedFilter,
     hideLivePhotos,
+    liveOnly,
     cosplayFilter,
     conventionFilter,
     photographerFilter,
@@ -807,6 +876,7 @@ export default function AdminGalleryManager({
     setQuery("");
     setPublishedFilter("all");
     setHideLivePhotos(false);
+    setLiveOnly(false);
     try {
       localStorage.setItem(HIDE_LIVE_STORAGE_KEY, "0");
     } catch {
@@ -821,8 +891,21 @@ export default function AdminGalleryManager({
     setSortBy("folder");
   }
 
+  function toggleLiveOnly(checked: boolean) {
+    setLiveOnly(checked);
+    if (checked) {
+      setHideLivePhotos(false);
+      try {
+        localStorage.setItem(HIDE_LIVE_STORAGE_KEY, "0");
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   function toggleHideLivePhotos(checked: boolean) {
     setHideLivePhotos(checked);
+    if (checked) setLiveOnly(false);
     try {
       localStorage.setItem(HIDE_LIVE_STORAGE_KEY, checked ? "1" : "0");
     } catch {
@@ -849,8 +932,8 @@ export default function AdminGalleryManager({
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard label="Total" value={stats.total} accent="blush" />
-        <AdminStatCard label="Published" value={stats.published} accent="rose" />
-        <AdminStatCard label="Draft" value={stats.unpublished} hint="Not published yet" accent="peach" />
+        <AdminStatCard label="Live" value={stats.published} accent="rose" />
+        <AdminStatCard label="Not live" value={stats.unpublished} hint="Hidden from the public site" accent="peach" />
         <AdminStatCard label="Unlinked" value={stats.unlinked} hint="No cosplay linked" accent="brown" />
       </div>
 
@@ -888,15 +971,26 @@ export default function AdminGalleryManager({
               placeholder="Search filenames, conventions, photographers, tags…"
               className="sm:flex-1"
             />
-            <label className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-closet-pink/50 bg-white px-3 py-2.5 text-sm font-semibold text-closet-brown transition hover:border-closet-rose/50">
-              <input
-                type="checkbox"
-                checked={hideLivePhotos}
-                onChange={(e) => toggleHideLivePhotos(e.target.checked)}
-                className="h-4 w-4 rounded border-closet-pink text-closet-rose"
-              />
-              Hide live photos
-            </label>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-closet-pink/50 bg-white px-3 py-2.5 text-sm font-semibold text-closet-brown transition hover:border-closet-rose/50">
+                <input
+                  type="checkbox"
+                  checked={liveOnly}
+                  onChange={(e) => toggleLiveOnly(e.target.checked)}
+                  className="h-4 w-4 rounded border-closet-pink text-closet-rose"
+                />
+                Live photos only
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-closet-pink/50 bg-white px-3 py-2.5 text-sm font-semibold text-closet-brown transition hover:border-closet-rose/50">
+                <input
+                  type="checkbox"
+                  checked={hideLivePhotos}
+                  onChange={(e) => toggleHideLivePhotos(e.target.checked)}
+                  className="h-4 w-4 rounded border-closet-pink text-closet-rose"
+                />
+                Hide live photos
+              </label>
+            </div>
           </div>
         </div>
 
@@ -913,9 +1007,9 @@ export default function AdminGalleryManager({
                 onChange={(v) => setPublishedFilter(v as GalleryPublishedFilter)}
                 options={[
                   { value: "all", label: "All status" },
-                  { value: "published", label: "Published" },
-                  { value: "unpublished", label: "Draft" },
-                  { value: "unlinked", label: "Unlinked drafts" },
+                  { value: "published", label: "Live" },
+                  { value: "unpublished", label: "Not live" },
+                  { value: "unlinked", label: "Unlinked (not live)" },
                 ]}
               />
               <AdminSelect
@@ -946,8 +1040,7 @@ export default function AdminGalleryManager({
                 options={[
                   { value: "all", label: "All sections" },
                   { value: "build", label: "Build gallery" },
-                  { value: "convention", label: "Convention gallery" },
-                  { value: "retired", label: "Retired gallery" },
+                  { value: "convention", label: "Gallery" },
                   { value: "unset", label: "Untagged section" },
                 ]}
               />
@@ -1195,18 +1288,10 @@ export default function AdminGalleryManager({
                       {!selectMode && item.gallerySection && (
                         <span
                           className={`max-w-full truncate rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white shadow-sm ${
-                            item.gallerySection === "build"
-                              ? "bg-sky-600"
-                              : item.gallerySection === "convention"
-                                ? "bg-violet-600"
-                                : "bg-zinc-500"
+                            item.gallerySection === "build" ? "bg-sky-600" : "bg-violet-600"
                           }`}
                         >
-                          {item.gallerySection === "build"
-                            ? "Build"
-                            : item.gallerySection === "convention"
-                              ? "Con"
-                              : "Retired"}
+                          {item.gallerySection === "build" ? "Build" : "Gallery"}
                         </span>
                       )}
                       {!selectMode && item.imageType && (
@@ -1408,8 +1493,7 @@ export default function AdminGalleryManager({
                 options={[
                   { value: "", label: "Don't change section" },
                   { value: "build", label: "Build gallery" },
-                  { value: "convention", label: "Convention gallery" },
-                  { value: "retired", label: "Retired gallery" },
+                  { value: "convention", label: "Gallery" },
                 ]}
               />
               <AdminField

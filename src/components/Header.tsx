@@ -10,6 +10,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/roster", label: "Roster" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/media-kit", label: "Media Kit" },
 ];
 
 function isActive(pathname: string, href: string): boolean {

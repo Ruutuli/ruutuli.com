@@ -29,7 +29,7 @@ const TAB_LABELS: { id: BoardTab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "pieces", label: "Costume Pieces" },
   { id: "gallery", label: "Build Gallery" },
-  { id: "convention", label: "Convention Photos" },
+  { id: "convention", label: "Gallery" },
 ];
 
 const CHECKLIST_GROUP_ORDER = [
@@ -169,14 +169,12 @@ export default function CosplayBoard({
   photoCredits = {},
   buildPhotoUrls = [],
   conventionPhotoUrls = [],
-  retiredPhotoUrls = [],
 }: {
   cosplay: Cosplay;
   tasks: BuildTask[];
   photoCredits?: GalleryPhotoCreditMap;
   buildPhotoUrls?: string[];
   conventionPhotoUrls?: string[];
-  retiredPhotoUrls?: string[];
 }) {
   const [tab, setTab] = useState<BoardTab>("overview");
 
@@ -203,14 +201,11 @@ export default function CosplayBoard({
   }, [cosplay.parts]);
 
   const buildPhotos = useMemo(() => {
-    const retiredTagged = filterCosplayImages(retiredPhotoUrls);
-    if (isRetired && retiredTagged.length > 0) return retiredTagged;
-
     const tagged = filterCosplayImages(buildPhotoUrls);
     if (tagged.length > 0) return tagged;
     if (cosplay.gallery.length > 0) return filterCosplayImages(cosplay.gallery);
     return filterCosplayImages([cosplay.image, cosplay.characterArt]);
-  }, [cosplay, buildPhotoUrls, retiredPhotoUrls, isRetired]);
+  }, [cosplay, buildPhotoUrls]);
 
   const conventionPhotos = useMemo(() => {
     const tagged = filterCosplayImages(conventionPhotoUrls);
@@ -473,10 +468,10 @@ export default function CosplayBoard({
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">
             <section className="cosplan-panel overflow-hidden">
               <div className="cosplan-panel-header justify-between">
-                <h2 className="font-sans text-base font-bold text-closet-brown">Build Highlights</h2>
+                <h2 className="font-sans text-base font-bold text-closet-brown">Gallery</h2>
                 <button
                   type="button"
-                  onClick={() => setTab("gallery")}
+                  onClick={() => setTab("convention")}
                   className="text-xs font-semibold text-closet-rose hover:text-closet-mauve"
                 >
                   Full gallery →
@@ -484,13 +479,13 @@ export default function CosplayBoard({
               </div>
               <div className="p-4 sm:p-5">
                 <CosplayPhotoGallery
-                  photos={buildPhotos}
+                  photos={conventionPhotos}
                   photoCredits={photoCredits}
                   characterName={cosplay.character}
                   variant="compact"
                   maxVisible={4}
-                  getFallbackLabel={labelPhoto}
-                  emptyMessage="Add gallery photos to show build highlights."
+                  getFallbackLabel={(src, i) => cosplay.convention || labelPhoto(src, i)}
+                  emptyMessage="No gallery photos yet. Tag photos as Gallery in the admin gallery."
                 />
               </div>
 
@@ -669,19 +664,19 @@ export default function CosplayBoard({
         </section>
       )}
 
-      {/* Convention Photos */}
+      {/* Gallery */}
       {tab === "convention" && (
         <section className="cosplan-panel overflow-hidden">
           <div className="cosplan-panel-header justify-between">
-            <h2 className="font-sans text-base font-bold text-closet-brown">Convention Photos</h2>
+            <h2 className="font-sans text-base font-bold text-closet-brown">Gallery</h2>
             {cosplay.convention && (
               <span className="text-xs font-semibold text-closet-rose">{cosplay.convention}</span>
             )}
           </div>
           <div className="p-4 sm:p-6">
-            {!cosplay.convention && conventionPhotos.length === 0 ? (
+            {conventionPhotos.length === 0 ? (
               <p className="py-12 text-center text-sm text-closet-brown-light">
-                No convention linked to this build yet.
+                No gallery photos yet. Tag photos as Gallery in the admin gallery.
               </p>
             ) : (
               <CosplayPhotoGallery
@@ -689,7 +684,7 @@ export default function CosplayBoard({
                 photoCredits={photoCredits}
                 characterName={cosplay.character}
                 getFallbackLabel={(src, i) => cosplay.convention || labelPhoto(src, i)}
-                emptyMessage="Convention photos will show up here once tagged with a convention or photographer in the gallery admin."
+                emptyMessage="Gallery photos will show up here once tagged in the admin gallery."
               />
             )}
           </div>

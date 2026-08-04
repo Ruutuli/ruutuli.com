@@ -5,9 +5,23 @@ import { COLLECTIONS, ensureDbIndexes, getCollection } from "@/lib/mongodb/db";
 import { seedStoreIfNeeded } from "./seed";
 import { slugifyId } from "./slug";
 
-function fromDoc(doc: Cosplay & { _id?: string }): Cosplay {
+function normalizeCosplayId(doc: { id?: unknown; _id?: unknown }): string {
+  if (typeof doc.id === "string" && doc.id.trim()) return doc.id.trim();
+  const mongoId = doc._id;
+  if (typeof mongoId === "string" && mongoId.trim()) return mongoId.trim();
+  if (mongoId != null && typeof mongoId === "object") {
+    if ("toHexString" in mongoId && typeof mongoId.toHexString === "function") {
+      return mongoId.toHexString();
+    }
+    const asString = String(mongoId);
+    if (asString && asString !== "[object Object]") return asString;
+  }
+  return mongoId != null ? String(mongoId) : "";
+}
+
+function fromDoc(doc: Cosplay & { _id?: unknown }): Cosplay {
   const { _id, ...rest } = doc;
-  return rest;
+  return { ...rest, id: normalizeCosplayId({ ...rest, _id }) };
 }
 
 function toDoc(cosplay: Cosplay) {
@@ -16,6 +30,7 @@ function toDoc(cosplay: Cosplay) {
 
 const ADMIN_LIST_PROJECTION = {
   _id: 1,
+  id: 1,
   title: 1,
   character: 1,
   series: 1,
@@ -36,9 +51,12 @@ const ADMIN_LIST_PROJECTION = {
   deadline: 1,
 } as const;
 
-function asAdminListCosplay(doc: Cosplay & { _id?: string }): Cosplay {
+function asAdminListCosplay(doc: Cosplay & { _id?: unknown }): Cosplay {
+  const id = normalizeCosplayId(doc);
+  const { _id, ...rest } = doc;
   return {
-    ...fromDoc(doc),
+    ...rest,
+    id,
     description: "",
     gallery: [],
     sources: [],
@@ -54,14 +72,14 @@ export async function getCosplaysForAdminList(): Promise<Cosplay[]> {
     .find({}, { projection: ADMIN_LIST_PROJECTION })
     .sort({ sortOrder: 1, character: 1 })
     .toArray();
-  return docs.map(asAdminListCosplay);
+  return docs.map(asAdminListCosplay).filter((c) => c.id.trim());
 }
 
 export async function getCosplays(): Promise<Cosplay[]> {
   await seedStoreIfNeeded();
   const collection = await getCollection<Cosplay & { _id: string }>(COLLECTIONS.cosplays);
   const docs = await collection.find().sort({ sortOrder: 1, character: 1 }).toArray();
-  return docs.map(fromDoc);
+  return docs.map(fromDoc).filter((c) => c.id.trim());
 }
 
 export async function saveCosplays(cosplays: Cosplay[]): Promise<Cosplay[]> {
@@ -129,9 +147,15 @@ export async function updateCosplay(id: string, patch: Partial<Cosplay>): Promis
 }
 
 export async function deleteCosplay(id: string): Promise<boolean> {
+  const trimmed = id?.trim();
+  if (!trimmed || trimmed === "undefined" || trimmed === "null") return false;
+
   const collection = await getCollection(COLLECTIONS.cosplays);
-  const result = await collection.deleteOne({ _id: id });
-  return result.deletedCount === 1;
+  const byMongoId = await collection.deleteOne({ _id: trimmed });
+  if (byMongoId.deletedCount === 1) return true;
+
+  const byIdField = await collection.deleteOne({ id: trimmed });
+  return byIdField.deletedCount === 1;
 }
 
 export async function reorderCosplays(orderedIds: string[]): Promise<Cosplay[]> {

@@ -7,12 +7,11 @@ export const GALLERY_IMAGE_TYPE_LABELS: Record<GalleryImageType, string> = {
 };
 
 /** Which public cosplay page gallery this photo appears in. */
-export type GallerySection = "build" | "convention" | "retired";
+export type GallerySection = "build" | "convention";
 
 export const GALLERY_SECTION_LABELS: Record<GallerySection, string> = {
   build: "Build gallery",
-  convention: "Convention gallery",
-  retired: "Retired gallery",
+  convention: "Gallery",
 };
 
 export interface GalleryItem {
@@ -29,7 +28,7 @@ export interface GalleryItem {
   cosplayIds: string[];
   /** Reference PNG (roster front) or feature photo (roster back) */
   imageType?: GalleryImageType | null;
-  /** Build progress vs convention shots on the public cosplay page */
+  /** Build progress vs finished cosplay shots on the public cosplay page */
   gallerySection?: GallerySection | null;
   /** Convention name (e.g. Katsucon 2017) — links to build planner event when matched */
   convention?: string;
@@ -60,6 +59,8 @@ export interface GalleryListFilters {
   published?: GalleryPublishedFilter;
   /** When true, exclude photos marked live/published on site. */
   hideLivePhotos?: boolean;
+  /** When true, show only photos marked live/published on site. */
+  liveOnly?: boolean;
   cosplayId?: string;
   convention?: string;
   photographer?: string;

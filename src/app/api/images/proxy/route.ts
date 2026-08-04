@@ -68,13 +68,30 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  function externalImageReferer(externalUrl: string): string | undefined {
+    try {
+      const host = new URL(externalUrl).hostname.toLowerCase();
+      if (host.includes("wikia.nocookie.net") || host.includes("fandom.com")) {
+        const wikiMatch = externalUrl.match(/\/([^/]+)\.fandom\.com/i);
+        if (wikiMatch) return `https://${wikiMatch[1]}.fandom.com/`;
+        const pathMatch = externalUrl.match(/\/\/static\.wikia\.nocookie\.net\/([^/]+)\//i);
+        if (pathMatch) return `https://${pathMatch[1]}.fandom.com/`;
+      }
+    } catch {
+      /* ignore malformed URLs */
+    }
+    return undefined;
+  }
+
   async function fetchExternalImage(externalUrl: string): Promise<NextResponse> {
     try {
+      const referer = externalImageReferer(externalUrl);
       const response = await fetch(externalUrl, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+          ...(referer ? { Referer: referer } : {}),
         },
         redirect: "follow",
       });

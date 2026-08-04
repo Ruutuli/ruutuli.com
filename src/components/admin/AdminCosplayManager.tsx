@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Cosplay, CosplayStatus, getCosplayPartsPercent } from "@/types/cosplay";
+import { Cosplay, CosplayStatus, dedupeCosplaysById, getCosplayPartsPercent } from "@/types/cosplay";
 import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
 import { resolveImageSrc } from "@/lib/utils/googleDriveImage";
 import {
@@ -41,7 +41,7 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
       try {
         const res = await fetch("/api/admin/cosplays");
         if (!res.ok) throw new Error("fetch failed");
-        const data = (await res.json()) as Cosplay[];
+        const data = dedupeCosplaysById((await res.json()) as Cosplay[]);
         if (!cancelled) setCosplays(data);
       } catch {
         if (!cancelled) setMessage("Could not load roster");
@@ -83,6 +83,10 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
   );
 
   async function remove(id: string) {
+    if (!id?.trim() || id === "undefined") {
+      setMessage("Could not delete — missing build id. Refresh and try again.");
+      return;
+    }
     if (!confirm("Delete this cosplay?")) return;
     const res = await fetch(`/api/admin/cosplays?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) {
@@ -115,7 +119,7 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
         setMessage("Could not save roster order");
         return;
       }
-      const updated = (await res.json()) as Cosplay[];
+      const updated = dedupeCosplaysById((await res.json()) as Cosplay[]);
       setCosplays(updated);
       setMessage("Roster order updated");
     } finally {

@@ -292,8 +292,8 @@ export function buildImageLoadAttempts(url: string | null | undefined): string[]
     const proxied = getProxyUrl(trimmed);
     if (proxied.startsWith("/api/images/proxy")) add(proxied);
   } else if (isAllowedExternalImageUrl(trimmed)) {
-    add(trimmed);
     add(getExternalProxyUrl(trimmed));
+    add(trimmed);
   } else {
     add(trimmed);
     const converted = convertGoogleDriveUrl(trimmed);
@@ -325,5 +325,6 @@ export function getGalleryAdminImageSrc(
   if (!url?.trim()) return IMAGE_PLACEHOLDER_URL;
   const normalized = normalizeImageUrl(url);
   if (normalized.startsWith("/") && !normalized.startsWith("//")) return normalized;
+  if (isAllowedExternalImageUrl(normalized)) return getExternalProxyUrl(normalized);
   return normalized || IMAGE_PLACEHOLDER_URL;
 }

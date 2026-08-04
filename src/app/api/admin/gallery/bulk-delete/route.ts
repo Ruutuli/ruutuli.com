@@ -22,6 +22,7 @@ function parseFilters(raw: GalleryListFilters | undefined): GalleryListFilters |
     q: typeof raw.q === "string" ? raw.q : undefined,
     published: published && published !== "all" ? published : undefined,
     hideLivePhotos: raw.hideLivePhotos === true,
+    liveOnly: raw.liveOnly === true,
     cosplayId: typeof raw.cosplayId === "string" ? raw.cosplayId : undefined,
     convention: typeof raw.convention === "string" ? raw.convention : undefined,
     photographer: typeof raw.photographer === "string" ? raw.photographer : undefined,
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
   if (!body) return badRequest("Invalid body");
 
   let itemIds = Array.isArray(body.itemIds)
-    ? [...new Set(body.itemIds.filter((id): id is string => typeof id === "string" && id.trim()))]
+    ? [...new Set(body.itemIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0))]
     : [];
 
   if (itemIds.length === 0 && body.filters) {

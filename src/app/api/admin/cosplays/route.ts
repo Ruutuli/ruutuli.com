@@ -78,8 +78,8 @@ export async function DELETE(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  if (!id) return badRequest("id query param is required");
+  const id = searchParams.get("id")?.trim();
+  if (!id || id === "undefined" || id === "null") return badRequest("id query param is required");
 
   const ok = await deleteCosplay(id);
   if (!ok) return notFound("Cosplay not found");

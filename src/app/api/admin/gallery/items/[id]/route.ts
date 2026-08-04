@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   if (typeof body.photographer === "string") patch.photographer = body.photographer.trim() || undefined;
   if (body.imageType === "reference" || body.imageType === "featured") patch.imageType = body.imageType;
   if (body.imageType === null) patch.imageType = null;
-  if (body.gallerySection === "build" || body.gallerySection === "convention" || body.gallerySection === "retired") {
+  if (body.gallerySection === "build" || body.gallerySection === "convention") {
     patch.gallerySection = body.gallerySection;
   }
   if (body.gallerySection === null) patch.gallerySection = null;

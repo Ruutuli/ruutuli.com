@@ -17,7 +17,7 @@ export function Footer() {
             © {new Date().getFullYear()} {siteConfig.name}
           </span>
         </div>
-        <p className="text-sm font-medium text-white/80">Plan it. Make it. Wear it.</p>
+        <p className="text-sm font-medium text-white/80">{siteConfig.tagline}</p>
       </div>
     </footer>
   );
