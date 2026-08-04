@@ -79,7 +79,7 @@ export default function AdminGalleryManager({
   const [sortBy, setSortBy] = useState<GallerySortBy>("folder");
   const [imageTypeFilter, setImageTypeFilter] = useState<GalleryImageTypeFilter>("all");
   const [gallerySectionFilter, setGallerySectionFilter] = useState<GallerySectionFilter>("all");
-  const [hideLivePhotos, setHideLivePhotos] = useState(readHideLivePreference);
+  const [hideLivePhotos, setHideLivePhotos] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState("");
@@ -115,6 +115,10 @@ export default function AdminGalleryManager({
   const setPhotoRequestRef = useRef(0);
   const loadAbortRef = useRef<AbortController | null>(null);
   const filterSignatureRef = useRef("");
+
+  useEffect(() => {
+    setHideLivePhotos(readHideLivePreference());
+  }, []);
 
   useEffect(() => {
     if (initialCosplays?.length && initialEvents?.length) return;
