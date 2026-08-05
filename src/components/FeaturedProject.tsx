@@ -37,12 +37,12 @@ export default function FeaturedProject({
   const artPosition = cosplay?.characterArtPosition ?? "center bottom";
 
   return (
-    <div id="dashboard" className="cosplan-dashboard-top animate-fade-up">
+    <div id="dashboard" className="cosplan-dashboard-top animate-fade-up gap-4 sm:gap-6">
       {/* Current Build — 8 columns on desktop */}
       {cosplay ? (
         <Link
           href={`/roster/${cosplay.id}`}
-          className="cosplan-focus-ring group col-span-12 flex h-full overflow-hidden rounded-3xl border border-closet-pink/35 bg-white shadow-closet transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/25 hover:shadow-closet-lg lg:col-span-8"
+          className="cosplan-focus-ring group col-span-12 flex h-full flex-col overflow-hidden rounded-3xl border border-closet-pink/35 bg-white shadow-closet transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/25 hover:shadow-closet-lg sm:flex-row lg:col-span-8"
         >
           <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
             <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-closet-rose">
@@ -81,7 +81,7 @@ export default function FeaturedProject({
             </span>
           </div>
 
-          <div className="relative w-[34%] max-w-[200px] shrink-0 sm:max-w-[220px] lg:max-w-[240px]" aria-hidden>
+          <div className="relative h-36 w-full shrink-0 sm:h-auto sm:w-[34%] sm:max-w-[200px] md:max-w-[220px] lg:max-w-[240px]" aria-hidden>
             <RosterImageSlot
               src={cosplay.characterArt}
               alt={`${cosplay.character} character art`}
@@ -115,7 +115,7 @@ export default function FeaturedProject({
       {/* Next convention — 4 columns on desktop, matched to Current Build height */}
       <Link
         href="/calendar"
-        className="cosplan-focus-ring group col-span-12 flex h-full overflow-hidden rounded-3xl border border-closet-pink/35 bg-white shadow-closet transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/25 hover:shadow-closet-lg lg:col-span-4"
+        className="cosplan-focus-ring group col-span-12 flex h-full flex-col overflow-hidden rounded-3xl border border-closet-pink/35 bg-white shadow-closet transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/25 hover:shadow-closet-lg sm:flex-row lg:col-span-4"
       >
         <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
           <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-closet-rose">
@@ -155,7 +155,7 @@ export default function FeaturedProject({
         </div>
 
         <div
-          className="relative flex w-[34%] max-w-[200px] shrink-0 items-end justify-center pb-5 sm:max-w-[220px] sm:pb-6 lg:max-w-[240px]"
+          className="relative hidden h-36 w-full shrink-0 items-end justify-center pb-5 sm:flex sm:h-auto sm:w-[34%] sm:max-w-[200px] sm:pb-6 md:max-w-[220px] lg:max-w-[240px]"
           aria-hidden
         >
           <SideCardIcon>

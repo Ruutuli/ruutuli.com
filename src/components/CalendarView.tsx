@@ -112,11 +112,11 @@ export default function CalendarView({ events, cosplays }: CalendarViewProps) {
             <div className="closet-panel-body">
             <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
               <h3 className="font-sans text-2xl font-bold text-closet-brown sm:text-3xl">{monthLabel}</h3>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   onClick={() => shiftMonth(-1)}
-                  className="closet-btn-outline px-3 py-1.5 text-sm"
+                  className="closet-btn-outline flex min-h-[44px] min-w-[44px] items-center justify-center px-3 py-1.5 text-sm sm:min-h-0 sm:min-w-0"
                   aria-label="Previous month"
                 >
                   ←
@@ -124,14 +124,14 @@ export default function CalendarView({ events, cosplays }: CalendarViewProps) {
                 <button
                   type="button"
                   onClick={goToToday}
-                  className="closet-btn-outline px-3 py-1.5 text-sm"
+                  className="closet-btn-outline min-h-[44px] px-3 py-1.5 text-sm sm:min-h-0"
                 >
                   Today
                 </button>
                 <button
                   type="button"
                   onClick={() => shiftMonth(1)}
-                  className="closet-btn-outline px-3 py-1.5 text-sm"
+                  className="closet-btn-outline flex min-h-[44px] min-w-[44px] items-center justify-center px-3 py-1.5 text-sm sm:min-h-0 sm:min-w-0"
                   aria-label="Next month"
                 >
                   →
@@ -139,13 +139,14 @@ export default function CalendarView({ events, cosplays }: CalendarViewProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-2 sm:gap-3">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2 md:gap-3">
               {WEEKDAYS.map((day) => (
                 <div
                   key={day}
-                  className="py-2 text-center text-xs font-semibold uppercase tracking-wider text-closet-brown-light"
+                  className="py-1.5 text-center text-[0.65rem] font-semibold uppercase tracking-wider text-closet-brown-light sm:py-2 sm:text-xs"
                 >
-                  {day}
+                  <span className="sm:hidden">{day.charAt(0)}</span>
+                  <span className="hidden sm:inline">{day}</span>
                 </div>
               ))}
 
@@ -167,7 +168,7 @@ export default function CalendarView({ events, cosplays }: CalendarViewProps) {
                     key={dateKey}
                     type="button"
                     onClick={() => setSelectedDay(dateKey)}
-                    className={`relative flex aspect-square flex-col items-center justify-center rounded-xl text-sm transition-all duration-200 ${
+                    className={`relative flex aspect-square min-h-[2.25rem] flex-col items-center justify-center rounded-lg text-xs transition-all duration-200 sm:rounded-xl sm:text-sm ${
                       isSelected
                         ? "scale-105 bg-closet-pink font-semibold text-white shadow-md"
                         : isToday

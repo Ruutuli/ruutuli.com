@@ -51,7 +51,7 @@ export default function RosterView({ cosplays }: { cosplays: Cosplay[] }) {
       <SectionHeading
         eyebrow="Character Roster"
         title="Cosplayed Characters"
-        description="Hover for the cosplay pic. Click to open the build page."
+        description="Tap and hold to peek at the cosplay photo. Click to open the build page."
       />
 
       <div className="mb-10 flex flex-col gap-5">
@@ -111,7 +111,7 @@ export default function RosterView({ cosplays }: { cosplays: Cosplay[] }) {
       {filtered.length === 0 ? (
         <p className="text-center text-closet-brown-light">No characters match your search.</p>
       ) : (
-        <div className="animate-stagger-safe grid grid-cols-2 items-stretch gap-5 sm:gap-6 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 xl:gap-7">
+        <div className="animate-stagger-safe grid grid-cols-2 items-stretch gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 xl:gap-7">
           {filtered.map((cosplay) => (
             <div key={cosplay.id} className="h-full">
               <RosterFlipCard cosplay={cosplay} />

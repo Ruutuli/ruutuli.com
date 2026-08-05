@@ -6,9 +6,9 @@ interface SectionHeadingProps {
 
 export default function SectionHeading({ eyebrow, title, description }: SectionHeadingProps) {
   return (
-    <div className="mb-12 animate-fade-up text-center sm:mb-14">
+    <div className="mb-8 animate-fade-up text-center sm:mb-14">
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-closet-rose">{eyebrow}</p>
-      <h2 className="mt-3 font-sans text-3xl font-bold tracking-tight text-closet-brown sm:text-4xl lg:text-5xl">
+      <h2 className="mt-2 font-sans text-2xl font-bold tracking-tight text-closet-brown sm:mt-3 sm:text-4xl lg:text-5xl">
         {title}
       </h2>
       {description && (

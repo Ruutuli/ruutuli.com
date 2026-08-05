@@ -137,9 +137,14 @@ function CardFace({
         />
         <StatusBadges cosplay={cosplay} progress={progress} />
         {showHint && (
-          <span className="roster-flip-hint" aria-hidden>
-            Hover to flip
-          </span>
+          <>
+            <span className="roster-flip-hint sm:hidden" aria-hidden>
+              Hold to peek
+            </span>
+            <span className="roster-flip-hint hidden sm:block" aria-hidden>
+              Hover to flip
+            </span>
+          </>
         )}
       </div>
       <CardMeta cosplay={cosplay} subtitle={subtitle} />

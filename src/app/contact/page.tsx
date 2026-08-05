@@ -37,7 +37,7 @@ export default async function ContactPage() {
                   </p>
                   <a
                     href={`mailto:${email}`}
-                    className="cosplan-focus-ring inline-flex min-h-[44px] items-center gap-2 text-lg font-semibold text-closet-rose underline decoration-closet-pink/60 underline-offset-4 transition-colors hover:text-closet-mauve"
+                    className="cosplan-focus-ring inline-flex min-h-[44px] max-w-full break-all items-center gap-2 text-base font-semibold text-closet-rose underline decoration-closet-pink/60 underline-offset-4 transition-colors hover:text-closet-mauve sm:text-lg"
                   >
                     {email}
                   </a>

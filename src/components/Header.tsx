@@ -48,8 +48,8 @@ export default function Header() {
     <header className="sticky top-0 z-50 animate-fade-in pt-3 sm:pt-4">
       <div className="cosplan-shell">
         <div className="closet-header-bar transition-shadow duration-300 hover:shadow-closet-lg">
-          <Link href="/" className="group flex shrink-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:animate-wiggle">
+          <Link href="/" className="group flex min-w-0 shrink items-center gap-2 sm:gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:animate-wiggle">
               <Image
                 src={siteConfig.assets.maki}
                 alt={siteConfig.name}
@@ -59,7 +59,7 @@ export default function Header() {
                 className="h-8 w-8"
               />
             </span>
-            <span className="cosplan-brand">{siteConfig.name}</span>
+            <span className="cosplan-brand truncate">{siteConfig.name}</span>
           </Link>
 
           <nav className="hidden flex-1 items-center justify-center gap-0.5 xl:flex">
@@ -108,7 +108,7 @@ export default function Header() {
           <button
             type="button"
             aria-label="Menu"
-            className="rounded-xl p-2.5 text-white xl:hidden"
+            className="-mr-1 shrink-0 rounded-xl p-2.5 text-white xl:hidden"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

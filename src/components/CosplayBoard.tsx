@@ -387,13 +387,13 @@ export default function CosplayBoard({
 
       {/* Tabs */}
       <div className="border-b border-closet-pink/50">
-        <div className="-mb-px flex flex-wrap gap-1 sm:gap-2">
+        <div className="-mb-px flex gap-1 overflow-x-auto sm:flex-wrap sm:gap-2">
           {TAB_LABELS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`relative px-3 py-3 text-sm font-semibold transition-colors sm:px-4 ${
+              className={`relative shrink-0 px-3 py-3 text-sm font-semibold transition-colors sm:px-4 ${
                 tab === t.id
                   ? "text-closet-rose"
                   : "text-closet-brown-light hover:text-closet-brown"
