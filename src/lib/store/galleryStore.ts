@@ -632,7 +632,7 @@ export async function getGalleryPhotoCreditsForCosplay(
 }
 
 /** Mongo filter for roster gallery tabs — convention includes untagged photos from character-only bulk tag. */
-function gallerySectionFilter(section: GallerySection): Filter<GalleryItem> {
+function gallerySectionFilter(section: GallerySection): Filter<GalleryDoc> {
   if (section === "build") {
     return { gallerySection: "build" };
   }
@@ -659,12 +659,11 @@ export async function getGallerySectionPhotosForCosplay(
   cosplayId: string,
   section: GallerySection,
 ): Promise<string[]> {
-  const collection = await getCollection<GalleryItem & { _id: string }>(COLLECTIONS.galleryItems);
-  const items = (
-    await collection
-      .find({ cosplayIds: cosplayId, published: true, ...gallerySectionFilter(section) })
-      .toArray()
-  )
+  const collection = await getCollection<GalleryDoc>(COLLECTIONS.galleryItems);
+  const filter: Filter<GalleryDoc> = {
+    $and: [{ cosplayIds: cosplayId, published: true }, gallerySectionFilter(section)],
+  };
+  const items = (await collection.find(filter).toArray())
     .map(fromDoc)
     .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
