@@ -246,7 +246,7 @@ export default function AdminGalleryEditModal({
               })}
             </div>
             <p className="mt-2 text-[10px] leading-snug text-closet-brown-light">
-              Build = progress & WIP shots · Gallery = finished cosplay photos
+              Build = progress & WIP shots · Gallery = finished cosplay photos (default when tagging a character)
             </p>
           </div>
         </div>

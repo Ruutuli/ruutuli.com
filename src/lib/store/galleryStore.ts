@@ -289,6 +289,10 @@ export async function updateGalleryItem(id: string, patch: Partial<GalleryItem>)
     const taggedCharacter = patch.cosplayIds.some((cosplayId) => !current.cosplayIds.includes(cosplayId));
     if (taggedCharacter) {
       patch = { ...patch, published: true };
+      const defaultSection = defaultGallerySectionForCharacterTag(current.gallerySection, patch.gallerySection);
+      if (defaultSection) {
+        patch = { ...patch, gallerySection: defaultSection };
+      }
     }
   }
 
@@ -627,13 +631,40 @@ export async function getGalleryPhotoCreditsForCosplay(
   return credits;
 }
 
+/** Mongo filter for roster gallery tabs — convention includes untagged photos from character-only bulk tag. */
+function gallerySectionFilter(section: GallerySection): Filter<GalleryItem> {
+  if (section === "build") {
+    return { gallerySection: "build" };
+  }
+  return {
+    $or: [
+      { gallerySection: "convention" },
+      { gallerySection: null },
+      { gallerySection: { $exists: false } },
+    ],
+  };
+}
+
+function defaultGallerySectionForCharacterTag(
+  current: GallerySection | null | undefined,
+  patchSection: GallerySection | null | undefined,
+): GallerySection | undefined {
+  if (patchSection !== undefined) return patchSection ?? undefined;
+  if (current) return undefined;
+  return "convention";
+}
+
 /** Published gallery photo URLs for a cosplay page section. */
 export async function getGallerySectionPhotosForCosplay(
   cosplayId: string,
   section: GallerySection,
 ): Promise<string[]> {
   const collection = await getCollection<GalleryItem & { _id: string }>(COLLECTIONS.galleryItems);
-  const items = (await collection.find({ cosplayIds: cosplayId, published: true, gallerySection: section }).toArray())
+  const items = (
+    await collection
+      .find({ cosplayIds: cosplayId, published: true, ...gallerySectionFilter(section) })
+      .toArray()
+  )
     .map(fromDoc)
     .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
@@ -826,6 +857,10 @@ export async function bulkTagGalleryItems(options: {
         nextCosplayIds.some((cosplayId) => !item.cosplayIds.includes(cosplayId))
       ) {
         $set.published = true;
+        const defaultSection = defaultGallerySectionForCharacterTag(item.gallerySection, gallerySection);
+        if (defaultSection) {
+          $set.gallerySection = defaultSection;
+        }
       }
     }
     if (conventionChanged || eventChanged) {

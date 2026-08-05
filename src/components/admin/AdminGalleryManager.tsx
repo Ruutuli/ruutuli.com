@@ -575,6 +575,8 @@ export default function AdminGalleryManager({
     if (!payload) return true;
 
     const addedCharacter = payload.cosplayIds.some((id) => !editing.cosplayIds.includes(id));
+    const resolvedGallerySection =
+      payload.gallerySection ?? (addedCharacter ? "convention" : null);
 
     const optimistic: GalleryItem = {
       ...editing,
@@ -584,7 +586,7 @@ export default function AdminGalleryManager({
       convention: payload.convention.trim() || undefined,
       photographer: payload.photographer.trim() || undefined,
       imageType: payload.imageType,
-      gallerySection: payload.gallerySection ?? undefined,
+      gallerySection: resolvedGallerySection ?? undefined,
       published: addedCharacter ? true : editing.published,
     };
 
@@ -706,6 +708,7 @@ export default function AdminGalleryManager({
     );
     if (adding) {
       setEditing((item) => (item ? { ...item, published: true } : item));
+      setEditGallerySection((section) => section ?? "convention");
     }
   }
 
@@ -1487,13 +1490,13 @@ export default function AdminGalleryManager({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <AdminSelect
-                label="Gallery section (optional)"
+                label="Gallery section"
                 value={bulkTagGallerySection}
                 onChange={(v) => setBulkTagGallerySection(v as "" | GallerySection)}
                 options={[
-                  { value: "", label: "Don't change section" },
+                  { value: "", label: "Gallery (default)" },
                   { value: "build", label: "Build gallery" },
-                  { value: "convention", label: "Gallery" },
+                  { value: "convention", label: "Gallery (force all)" },
                 ]}
               />
               <AdminField
@@ -1511,6 +1514,9 @@ export default function AdminGalleryManager({
                 list="bulk-tag-photographers"
               />
             </div>
+            <p className="text-xs text-closet-brown-light">
+              Character tags go to the normal Gallery tab by default. Pick Build gallery only for WIP / progress shots.
+            </p>
             <datalist id="bulk-tag-conventions">
               {conventionOptions.map((name) => (
                 <option key={name} value={name} />
