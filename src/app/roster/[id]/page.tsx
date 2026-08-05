@@ -9,9 +9,9 @@ import {
   getGalleryPhotoCreditsForCosplay,
   getGallerySectionPhotosForCosplay,
 } from "@/lib/store/galleryStore";
+import { resolveCosplayTodos } from "@/lib/cosplay/todos";
 import { getTasks } from "@/lib/store/taskStore";
 import { getSiteConfig } from "@/lib/server/siteConfig";
-import { getTasksForCosplay } from "@/data/tasks";
 
 export const dynamic = "force-dynamic";
 
@@ -45,14 +45,14 @@ export default async function CosplayBoardPage({ params }: PageProps) {
 
   const [enrichedCosplay] = await enrichCosplaysWithGalleryDisplayPhotos([cosplay]);
 
-  const tasks = getTasksForCosplay(allTasks, enrichedCosplay.id, enrichedCosplay.character);
+  const todos = resolveCosplayTodos(enrichedCosplay, allTasks);
 
   return (
     <SiteShell>
       <div className="closet-page !pt-4">
         <CosplayBoard
           cosplay={enrichedCosplay}
-          tasks={tasks}
+          todos={todos}
           photoCredits={photoCredits}
           buildPhotoUrls={buildPhotoUrls}
           conventionPhotoUrls={conventionPhotoUrls}

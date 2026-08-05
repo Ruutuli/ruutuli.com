@@ -3,22 +3,22 @@
 import Link from "next/link";
 import { Cosplay } from "@/types/cosplay";
 import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
-import { BuildTask, getOpenBuildTasks } from "@/types/task";
-import { getDashboardBuildTasks } from "@/data/tasks";
+import { BuildTask } from "@/types/task";
+import { countOpenCosplayTodos, getDashboardCosplayTodos } from "@/lib/cosplay/todos";
 import { Wig } from "@/types/wig";
 import { AdminCard, AdminPageHeader, AdminStatCard, AdminStatusBadge } from "./ui";
-import { IconCosplay, IconGallery, IconPlus, IconTasks, IconWig } from "./icons";
+import { IconCalendar, IconChecklist, IconCosplay, IconGallery, IconPlus, IconWig } from "./icons";
 
 interface AdminDashboardProps {
   cosplays: Cosplay[];
   wigs: Wig[];
-  tasks: BuildTask[];
+  tasks?: BuildTask[];
 }
 
-export default function AdminDashboard({ cosplays, wigs, tasks }: AdminDashboardProps) {
+export default function AdminDashboard({ cosplays, wigs, tasks = [] }: AdminDashboardProps) {
   const inProgress = cosplays.filter((c) => c.status === "in-progress").length;
   const completed = cosplays.filter((c) => c.status === "completed").length;
-  const openTasks = getOpenBuildTasks(tasks).length;
+  const openTodos = countOpenCosplayTodos(cosplays, tasks);
   const spotlight = cosplays.find((c) => c.spotlight);
 
   return (
@@ -38,7 +38,7 @@ export default function AdminDashboard({ cosplays, wigs, tasks }: AdminDashboard
         <AdminStatCard label="Roster" value={cosplays.length} hint={`${inProgress} in progress`} accent="rose" />
         <AdminStatCard label="Completed" value={completed} hint="Finished builds" accent="peach" />
         <AdminStatCard label="Wigs" value={wigs.length} hint="Inventory items" accent="blush" />
-        <AdminStatCard label="Open tasks" value={openTasks} hint={`${tasks.length} total`} accent="brown" />
+        <AdminStatCard label="Open to-dos" value={openTodos} hint="Across all builds" accent="brown" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -79,32 +79,33 @@ export default function AdminDashboard({ cosplays, wigs, tasks }: AdminDashboard
         <AdminCard>
           <div className="flex items-center justify-between border-b border-closet-pink/50 px-5 py-4">
             <h2 className="font-sans text-lg font-bold text-closet-brown">Current focus</h2>
-            <Link href="/admin/tasks" className="text-sm font-semibold text-closet-rose hover:underline">
-              All tasks
+            <Link href="/admin/todos" className="text-sm font-semibold text-closet-rose hover:underline">
+              All to-dos
             </Link>
           </div>
           <ul className="divide-y divide-closet-pink/35 p-2">
-            {getDashboardBuildTasks(tasks, 5).map((task) => (
-              <li key={task.id} className="flex items-center gap-3 px-3 py-3 text-sm">
+            {getDashboardCosplayTodos(cosplays, tasks, 5).map((todo) => (
+              <li key={`${todo.cosplayId}-${todo.id}`} className="flex items-center gap-3 px-3 py-3 text-sm">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-closet-rose" />
                 <span className="min-w-0">
-                  <span className="block text-[10px] font-bold uppercase tracking-wide text-closet-rose">{task.character}</span>
-                  <span className="font-semibold text-closet-brown">{task.label}</span>
+                  <span className="block text-[10px] font-bold uppercase tracking-wide text-closet-rose">{todo.character}</span>
+                  <span className="font-semibold text-closet-brown">{todo.label}</span>
                 </span>
               </li>
             ))}
-            {openTasks === 0 && (
-              <li className="px-3 py-6 text-center text-sm text-closet-brown-light">All caught up — no open tasks.</li>
+            {openTodos === 0 && (
+              <li className="px-3 py-6 text-center text-sm text-closet-brown-light">All caught up — no open to-dos.</li>
             )}
           </ul>
         </AdminCard>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
+        <QuickLink href="/admin/todos" icon={IconChecklist} label="To-Do List" hint={`${openTodos} open`} />
         <QuickLink href="/admin/cosplays" icon={IconCosplay} label="Manage roster" hint={`${cosplays.length} builds`} />
         <QuickLink href="/admin/gallery" icon={IconGallery} label="Gallery" hint="Drive photos" />
         <QuickLink href="/admin/wigs" icon={IconWig} label="Wig inventory" hint={`${wigs.length} wigs`} />
-        <QuickLink href="/admin/tasks" icon={IconTasks} label="Task list" hint={`${openTasks} open`} />
+        <QuickLink href="/admin/events" icon={IconCalendar} label="Events" hint="Con calendar" />
       </div>
     </div>
   );

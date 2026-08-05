@@ -33,6 +33,16 @@ import {
   AdminTextarea,
   AdminToast,
 } from "./ui";
+import {
+  AdminDataTable,
+  AdminTableActionsCell,
+  AdminTableActionsHeader,
+  AdminTableHead,
+  AdminTableMeta,
+  AdminTablePagination,
+  AdminTableSortHeader,
+  useClientPagination,
+} from "./AdminDataTable";
 
 const STATUSES: BuildTaskStatus[] = ["not-started", "started", "not-purchased", "completed", "optional"];
 const TYPES: BuildTaskType[] = ["todo", "buy", "check"];
@@ -49,6 +59,38 @@ const TIMING_STYLES = {
   upcoming: "bg-sky-100 text-sky-800",
   active: "bg-emerald-100 text-emerald-800",
   past: "bg-slate-100 text-slate-600",
+};
+
+type TaskSortKey = "label" | "character" | "dueDate" | "status" | "cost";
+type TaskViewMode = "grouped" | "table";
+
+function sortTasks(list: BuildTask[], key: TaskSortKey, dir: "asc" | "desc"): BuildTask[] {
+  const mult = dir === "asc" ? 1 : -1;
+  return [...list].sort((a, b) => {
+    switch (key) {
+      case "label":
+        return a.label.localeCompare(b.label) * mult;
+      case "character":
+        return a.character.localeCompare(b.character) * mult || a.label.localeCompare(b.label);
+      case "dueDate": {
+        const ad = a.dueDate ?? "9999-12-31";
+        const bd = b.dueDate ?? "9999-12-31";
+        return ad.localeCompare(bd) * mult || a.label.localeCompare(b.label);
+      }
+      case "status":
+        return a.status.localeCompare(b.status) * mult || a.label.localeCompare(b.label);
+      case "cost":
+        return ((a.estimatedCost ?? 0) - (b.estimatedCost ?? 0)) * mult || a.label.localeCompare(b.label);
+    }
+  });
+}
+
+const TASK_SORT_LABELS: Record<TaskSortKey, string> = {
+  label: "Task",
+  character: "Character",
+  dueDate: "Due date",
+  status: "Status",
+  cost: "Cost",
 };
 
 interface Props {
@@ -95,6 +137,9 @@ export default function AdminBuildTaskManager({ initialTasks, initialEvents, cos
   const [eventDraft, setEventDraft] = useState<Partial<ConEvent>>({ title: "", date: "" });
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<TaskViewMode>("grouped");
+  const [taskSortBy, setTaskSortBy] = useState<TaskSortKey>("character");
+  const [taskSortDir, setTaskSortDir] = useState<"asc" | "desc">("asc");
 
   const sortedEvents = useMemo(
     () => [...events].sort((a, b) => a.date.localeCompare(b.date)),
@@ -138,6 +183,22 @@ export default function AdminBuildTaskManager({ initialTasks, initialEvents, cos
     const map = groupTasksByCharacter(filtered);
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [filtered]);
+
+  const sortedFiltered = useMemo(
+    () => sortTasks(filtered, taskSortBy, taskSortDir),
+    [filtered, taskSortBy, taskSortDir],
+  );
+
+  const pagination = useClientPagination(sortedFiltered, 30);
+
+  function toggleTaskSort(key: TaskSortKey) {
+    if (taskSortBy === key) {
+      setTaskSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setTaskSortBy(key);
+      setTaskSortDir("asc");
+    }
+  }
 
   const grouped = useMemo(() => groupTasksByCharacter(eventTasks), [eventTasks]);
   const eventProgress = getBuildTaskProgress(eventTasks);
@@ -418,7 +479,21 @@ export default function AdminBuildTaskManager({ initialTasks, initialEvents, cos
           {/* Filters */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <AdminSearch value={query} onChange={setQuery} placeholder="Search tasks…" className="max-w-md flex-1" />
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex rounded-xl ring-1 ring-closet-pink/60">
+                {(["grouped", "table"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setViewMode(mode)}
+                    className={`admin-btn-touch px-3 py-2 text-xs font-bold capitalize first:rounded-l-xl last:rounded-r-xl ${
+                      viewMode === mode ? "bg-closet-rose text-white" : "bg-white text-closet-brown"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
               {(["all", "open", "done"] as const).map((s) => (
                 <button
                   key={s}
@@ -464,15 +539,131 @@ export default function AdminBuildTaskManager({ initialTasks, initialEvents, cos
             </div>
           )}
 
-          {/* Tasks by character */}
-          <AdminCard className="p-4 sm:p-5">
+          {/* Tasks */}
+          <AdminCard className="p-0 sm:p-0">
             {filtered.length === 0 ? (
-              <AdminEmptyState
-                title="No tasks"
-                description="Add tasks for this event to track your build checklist."
-              />
+              <div className="p-4 sm:p-5">
+                <AdminEmptyState
+                  title="No tasks"
+                  description="Add tasks for this event to track your build checklist."
+                />
+              </div>
+            ) : viewMode === "table" ? (
+              <>
+                <AdminTableMeta
+                  rangeStart={pagination.rangeStart}
+                  rangeEnd={pagination.rangeEnd}
+                  total={pagination.total}
+                  sortLabel={`sorted by ${TASK_SORT_LABELS[taskSortBy]} (${taskSortDir === "asc" ? "A→Z" : "Z→A"})`}
+                />
+                <AdminDataTable minWidth={900}>
+                  <AdminTableHead>
+                    <tr>
+                      <th className="w-10 px-4 py-3.5" />
+                      <AdminTableSortHeader
+                        label="Task"
+                        active={taskSortBy === "label"}
+                        direction={taskSortBy === "label" ? taskSortDir : undefined}
+                        onSort={() => toggleTaskSort("label")}
+                      />
+                      <AdminTableSortHeader
+                        label="Character"
+                        active={taskSortBy === "character"}
+                        direction={taskSortBy === "character" ? taskSortDir : undefined}
+                        onSort={() => toggleTaskSort("character")}
+                      />
+                      <th className="px-4 py-3.5 font-bold">Type</th>
+                      <AdminTableSortHeader
+                        label="Due"
+                        active={taskSortBy === "dueDate"}
+                        direction={taskSortBy === "dueDate" ? taskSortDir : undefined}
+                        onSort={() => toggleTaskSort("dueDate")}
+                      />
+                      <AdminTableSortHeader
+                        label="Cost"
+                        active={taskSortBy === "cost"}
+                        direction={taskSortBy === "cost" ? taskSortDir : undefined}
+                        onSort={() => toggleTaskSort("cost")}
+                      />
+                      <AdminTableSortHeader
+                        label="Status"
+                        active={taskSortBy === "status"}
+                        direction={taskSortBy === "status" ? taskSortDir : undefined}
+                        onSort={() => toggleTaskSort("status")}
+                      />
+                      <AdminTableActionsHeader />
+                    </tr>
+                  </AdminTableHead>
+                  <tbody>
+                    {pagination.pageItems.map((task) => (
+                      <tr key={task.id} className="group admin-table-row">
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={isBuildTaskDone(task)}
+                            onChange={() => void toggleTaskComplete(task)}
+                            className="h-4 w-4 rounded border-closet-pink text-closet-rose"
+                            aria-label={`Mark ${task.label} complete`}
+                          />
+                        </td>
+                        <td className="max-w-[240px] px-4 py-3">
+                          {task.link ? (
+                            <a
+                              href={task.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`font-semibold hover:text-closet-rose hover:underline ${isBuildTaskDone(task) ? "text-closet-brown-light line-through" : "text-closet-brown"}`}
+                            >
+                              {task.label}
+                            </a>
+                          ) : (
+                            <p className={`font-semibold ${isBuildTaskDone(task) ? "text-closet-brown-light line-through" : "text-closet-brown"}`}>
+                              {task.label}
+                            </p>
+                          )}
+                          {task.notes && (
+                            <p className="mt-0.5 line-clamp-1 text-xs text-closet-brown-light">{task.notes}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-closet-brown">{task.character}</td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-closet-brown ring-1 ring-closet-pink/50">
+                            {BUILD_TASK_TYPE_LABELS[task.type]}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs font-semibold text-closet-brown-light">
+                          {task.dueDate ? formatEventDate(task.dueDate) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-xs font-semibold text-closet-brown-light">
+                          {task.estimatedCost != null ? `$${task.estimatedCost.toFixed(0)}` : "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLES[task.status]}`}>
+                            {BUILD_TASK_STATUS_LABELS[task.status]}
+                          </span>
+                        </td>
+                        <AdminTableActionsCell>
+                          <AdminButton variant="ghost" className="text-xs text-closet-rose" onClick={() => setEditing({ ...task })}>
+                            Edit
+                          </AdminButton>
+                          <AdminButton variant="danger" className="text-xs" onClick={() => remove(task.id)}>
+                            Delete
+                          </AdminButton>
+                        </AdminTableActionsCell>
+                      </tr>
+                    ))}
+                  </tbody>
+                </AdminDataTable>
+                <AdminTablePagination
+                  page={pagination.page}
+                  totalPages={pagination.totalPages}
+                  pageSize={pagination.pageSize}
+                  onPageChange={pagination.setPage}
+                  onPageSizeChange={pagination.setPageSize}
+                />
+              </>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 p-4 sm:p-5">
                 {groupedFiltered.map(([character, charTasks]) => {
                   const charProgress = getBuildTaskProgress(charTasks);
                   const charOpen = charTasks.filter((t) => !isBuildTaskDone(t) && t.status !== "optional").length;

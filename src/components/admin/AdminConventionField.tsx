@@ -108,7 +108,7 @@ export default function AdminConventionField({
 
       {upcoming.length === 0 && sorted.length > 0 && (
         <p className="mb-4 text-sm text-closet-brown-light">
-          No upcoming conventions on your calendar — pick a past one below or add a new event in Build planner.
+          No upcoming conventions on your calendar — pick a past one below or add a new event.
         </p>
       )}
 
@@ -161,8 +161,8 @@ export default function AdminConventionField({
 
       <p className="mt-3 text-xs text-closet-brown-light">
         Need to add a new con?{" "}
-        <Link href="/admin/tasks" className="font-semibold text-closet-rose hover:underline">
-          Manage conventions in Build planner →
+        <Link href="/admin/events" className="font-semibold text-closet-rose hover:underline">
+          Manage events & conventions →
         </Link>
       </p>
     </section>

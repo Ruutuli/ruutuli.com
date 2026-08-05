@@ -6,15 +6,15 @@ import {
   Cosplay,
   CosplayPart,
   CosplayPartCategory,
+  CosplayTodo,
   getCosplayPartsPercent,
+  getCosplayTodoProgress,
+  getOpenCosplayTodos,
+  isCosplayTodoDone,
 } from "@/types/cosplay";
 import {
   BUILD_TASK_STATUS_LABELS,
   BUILD_TASK_TYPE_LABELS,
-  BuildTask,
-  getBuildTaskProgress,
-  getOpenBuildTasks,
-  isBuildTaskDone,
 } from "@/types/task";
 import { formatEventDate } from "@/data/calendar";
 import { getCosplayProgressPercent } from "@/lib/siteConfig";
@@ -27,10 +27,11 @@ import { GalleryPhotoCreditMap } from "@/lib/gallery/photoCredits";
 import CosplayPhotoGallery from "@/components/CosplayPhotoGallery";
 import RosterImageSlot from "@/components/RosterImageSlot";
 
-type BoardTab = "overview" | "pieces" | "gallery" | "convention" | "notes";
+type BoardTab = "overview" | "pieces" | "gallery" | "convention" | "todos";
 
 const TAB_LABELS: { id: BoardTab; label: string }[] = [
   { id: "overview", label: "Overview" },
+  { id: "todos", label: "To-Do List" },
   { id: "pieces", label: "Costume Pieces" },
   { id: "gallery", label: "Build Gallery" },
   { id: "convention", label: "Gallery" },
@@ -167,16 +168,113 @@ function galleryLabel(src: string, index: number, parts?: CosplayPart[]): string
   return `Photo ${index + 1}`;
 }
 
+function CosplayTodoList({
+  todos,
+  isRetired,
+  compact = false,
+}: {
+  todos: CosplayTodo[];
+  isRetired: boolean;
+  compact?: boolean;
+}) {
+  if (todos.length === 0) {
+    return (
+      <p className="py-6 text-center text-sm text-closet-brown-light">
+        Nothing on the to-do list yet.
+      </p>
+    );
+  }
+
+  const grouped = (["todo", "buy", "check"] as const)
+    .map((type) => ({
+      type,
+      items: todos.filter((t) => t.type === type),
+    }))
+    .filter((g) => g.items.length > 0);
+
+  if (compact) {
+    return (
+      <ul className="space-y-2">
+        {todos.map((task) => {
+          const done = isCosplayTodoDone(task);
+          return (
+            <li key={task.id} className={`flex items-start gap-2.5 text-sm ${done ? "opacity-55" : ""}`}>
+              {!isRetired && <CheckIcon owned={done} />}
+              <span className="min-w-0 flex-1">
+                <span className={`font-semibold text-closet-brown ${done ? "line-through" : ""}`}>
+                  {task.label}
+                </span>
+                <span className="ml-1.5 text-xs text-closet-brown-light">
+                  {BUILD_TASK_TYPE_LABELS[task.type]}
+                </span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {grouped.map(({ type, items }) => (
+        <div key={type}>
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-closet-rose">
+            {BUILD_TASK_TYPE_LABELS[type]}
+          </h3>
+          <ul className="divide-y divide-closet-pink/35 rounded-xl border border-closet-pink/45 bg-white/60">
+            {items.map((task) => {
+              const done = isCosplayTodoDone(task);
+              return (
+                <li
+                  key={task.id}
+                  className={`flex items-start gap-3 px-4 py-3.5 ${done ? "opacity-55" : ""}`}
+                >
+                  {!isRetired && <CheckIcon owned={done} />}
+                  <span className="min-w-0 flex-1">
+                    {task.link ? (
+                      <a
+                        href={task.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`block text-sm font-semibold text-closet-rose hover:underline ${done ? "line-through" : ""}`}
+                      >
+                        {task.label}
+                      </a>
+                    ) : (
+                      <span
+                        className={`block text-sm font-semibold text-closet-brown ${done ? "line-through" : ""}`}
+                      >
+                        {task.label}
+                      </span>
+                    )}
+                    <span className="mt-0.5 block text-xs text-closet-brown-light">
+                      {BUILD_TASK_STATUS_LABELS[task.status]}
+                      {task.dueDate ? ` · Due ${formatEventDate(task.dueDate)}` : ""}
+                      {typeof task.estimatedCost === "number" ? ` · $${task.estimatedCost}` : ""}
+                      {task.notes ? ` · ${task.notes}` : ""}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CosplayBoard({
   cosplay,
-  tasks,
+  todos,
   photoCredits = {},
   buildPhotoUrls = [],
   conventionPhotoUrls = [],
   displayPhotoCandidates,
 }: {
   cosplay: Cosplay;
-  tasks: BuildTask[];
+  todos: CosplayTodo[];
   photoCredits?: GalleryPhotoCreditMap;
   buildPhotoUrls?: string[];
   conventionPhotoUrls?: string[];
@@ -187,8 +285,8 @@ export default function CosplayBoard({
   const isRetired = cosplay.status === "retired";
   const overall = isRetired ? 0 : getCosplayProgressPercent(cosplay);
   const partsPercent = getCosplayPartsPercent(cosplay);
-  const doneTasks = tasks.filter(isBuildTaskDone).length;
-  const openTasks = getOpenBuildTasks(tasks);
+  const doneTasks = todos.filter(isCosplayTodoDone).length;
+  const openTasks = getOpenCosplayTodos(todos);
   const nextUp = openTasks.slice(0, 5);
 
   const wig = partByCategory(cosplay.parts, "wig");
@@ -365,19 +463,20 @@ export default function CosplayBoard({
               </button>
               <button
                 type="button"
-                onClick={() => setTab("notes")}
+                onClick={() => setTab("todos")}
                 className="closet-btn-outline !rounded-xl !border-closet-rose/50 !px-5 !py-2.5 !text-sm"
               >
-                Build Notes
+                To-Do List
+                {openTasks.length > 0 ? ` (${openTasks.length})` : ""}
               </button>
             </div>
 
-            {(cosplay.deadline || (!isRetired && partsPercent !== null) || (tasks.length > 0 && !isRetired)) && (
+            {(cosplay.deadline || (!isRetired && partsPercent !== null) || (todos.length > 0 && !isRetired)) && (
               <p className="text-xs text-closet-brown-light">
                 {!isRetired && partsPercent !== null ? `${partsPercent}% parts owned` : null}
                 {!isRetired && partsPercent !== null && cosplay.deadline ? " · " : null}
                 {cosplay.deadline ? `Deadline ${formatEventDate(cosplay.deadline)}` : null}
-                {!isRetired && tasks.length > 0 ? `${cosplay.deadline ? " · " : ""}${doneTasks}/${tasks.length} tasks` : null}
+                {!isRetired && todos.length > 0 ? `${cosplay.deadline ? " · " : ""}${doneTasks}/${todos.length} tasks` : null}
               </p>
             )}
           </div>
@@ -399,20 +498,16 @@ export default function CosplayBoard({
               }`}
             >
               {t.label}
+              {t.id === "todos" && openTasks.length > 0 ? (
+                <span className="ml-1.5 rounded-full bg-closet-rose/15 px-1.5 py-0.5 text-[10px] font-bold text-closet-rose">
+                  {openTasks.length}
+                </span>
+              ) : null}
               {tab === t.id && (
                 <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-closet-rose" />
               )}
             </button>
           ))}
-          {tab === "notes" && (
-            <button
-              type="button"
-              className="relative px-3 py-3 text-sm font-semibold text-closet-rose sm:px-4"
-            >
-              Build Notes
-              <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-closet-rose" />
-            </button>
-          )}
         </div>
       </div>
 
@@ -464,6 +559,20 @@ export default function CosplayBoard({
             </div>
           </section>
 
+          <section className="cosplan-panel overflow-hidden">
+            <div className="cosplan-panel-header justify-between">
+              <h2 className="font-sans text-base font-bold text-closet-brown">To-Do List</h2>
+              {todos.length > 0 && (
+                <span className="text-xs font-semibold text-closet-brown">
+                  {getCosplayTodoProgress(todos)}% · {doneTasks}/{todos.length}
+                </span>
+              )}
+            </div>
+            <div className="p-4 sm:p-6">
+              <CosplayTodoList todos={todos} isRetired={isRetired} />
+            </div>
+          </section>
+
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">
             <section className="cosplan-panel overflow-hidden">
               <div className="cosplan-panel-header justify-between">
@@ -496,25 +605,13 @@ export default function CosplayBoard({
                     </h3>
                     <button
                       type="button"
-                      onClick={() => setTab("notes")}
+                      onClick={() => setTab("todos")}
                       className="text-xs font-semibold text-closet-rose hover:text-closet-mauve"
                     >
-                      All notes →
+                      All to-dos →
                     </button>
                   </div>
-                  <ul className="space-y-2">
-                    {nextUp.map((task) => (
-                      <li key={task.id} className="flex items-start gap-2.5 text-sm">
-                        <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-closet-rose" aria-hidden />
-                        <span>
-                          <span className="font-semibold text-closet-brown">{task.label}</span>
-                          <span className="ml-1.5 text-xs text-closet-brown-light">
-                            {BUILD_TASK_TYPE_LABELS[task.type]}
-                          </span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  <CosplayTodoList todos={nextUp} isRetired={isRetired} compact />
                 </div>
               )}
             </section>
@@ -691,43 +788,20 @@ export default function CosplayBoard({
         </section>
       )}
 
-      {/* Build Notes / Tasks */}
-      {tab === "notes" && (
+      {/* To-Do List */}
+      {tab === "todos" && (
         <section className="cosplan-panel overflow-hidden">
           <div className="cosplan-panel-header justify-between">
-            <h2 className="font-sans text-base font-bold text-closet-brown">Build Notes</h2>
-            <span className="text-xs font-semibold text-closet-brown">
-              {getBuildTaskProgress(tasks)}% · {doneTasks}/{tasks.length}
-            </span>
-          </div>
-          <ul className="divide-y divide-closet-pink/35 px-4 py-2">
-            {tasks.length === 0 ? (
-              <li className="py-8 text-center text-sm text-closet-brown-light">
-                No notes or tasks yet.
-              </li>
-            ) : (
-              tasks.map((task) => {
-                const done = isBuildTaskDone(task);
-                return (
-                  <li key={task.id} className={`flex items-start gap-3 py-3.5 ${done ? "opacity-55" : ""}`}>
-                    <CheckIcon owned={done} />
-                    <span className="min-w-0 flex-1">
-                      <span
-                        className={`block text-sm font-semibold text-closet-brown ${done ? "line-through" : ""}`}
-                      >
-                        {task.label}
-                      </span>
-                      <span className="text-xs text-closet-brown-light">
-                        {BUILD_TASK_TYPE_LABELS[task.type]} · {BUILD_TASK_STATUS_LABELS[task.status]}
-                        {typeof task.estimatedCost === "number" ? ` · $${task.estimatedCost}` : ""}
-                        {task.notes ? ` · ${task.notes}` : ""}
-                      </span>
-                    </span>
-                  </li>
-                );
-              })
+            <h2 className="font-sans text-base font-bold text-closet-brown">To-Do List</h2>
+            {todos.length > 0 && (
+              <span className="text-xs font-semibold text-closet-brown">
+                {getCosplayTodoProgress(todos)}% · {doneTasks}/{todos.length}
+              </span>
             )}
-          </ul>
+          </div>
+          <div className="p-4 sm:p-6">
+            <CosplayTodoList todos={todos} isRetired={isRetired} />
+          </div>
         </section>
       )}
     </div>

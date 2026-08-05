@@ -1,4 +1,33 @@
+import type { BuildTaskStatus, BuildTaskType } from "@/types/task";
+
 export type CosplayStatus = "completed" | "in-progress" | "planned" | "retired";
+
+/** Per-cosplay build checklist item — to-do, to-buy, or check. */
+export interface CosplayTodo {
+  id: string;
+  label: string;
+  type: BuildTaskType;
+  link?: string;
+  estimatedCost?: number;
+  status: BuildTaskStatus;
+  percent: number;
+  notes?: string;
+  dueDate?: string;
+}
+
+export function isCosplayTodoDone(todo: CosplayTodo): boolean {
+  return todo.status === "completed" || todo.percent >= 100;
+}
+
+export function getOpenCosplayTodos(todos: CosplayTodo[]): CosplayTodo[] {
+  return todos.filter((t) => !isCosplayTodoDone(t) && t.status !== "optional");
+}
+
+export function getCosplayTodoProgress(todos: CosplayTodo[]): number {
+  if (todos.length === 0) return 0;
+  const total = todos.reduce((sum, t) => sum + Math.min(100, Math.max(0, t.percent)), 0);
+  return Math.round(total / todos.length);
+}
 
 export interface CosplayProgress {
   label: string;
@@ -65,6 +94,8 @@ export interface Cosplay {
   convention?: string;
   /** Costume piece checklist from spreadsheet */
   parts?: CosplayPart[];
+  /** Build to-do list — things to make, buy, or check */
+  todos?: CosplayTodo[];
   /** Vendors & shops — wig, contacts, props, etc. */
   sources?: CosplaySource[];
   /** Manual roster display order (lower = first). Set in admin. */

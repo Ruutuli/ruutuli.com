@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Cosplay, CosplayStatus, getCosplayPartsPercent } from "@/types/cosplay";
+import { Cosplay, CosplayStatus, CosplayTodo, getCosplayPartsPercent, getOpenCosplayTodos } from "@/types/cosplay";
 import { ConEvent } from "@/types/event";
 import { emptyCosplayForm } from "@/lib/cosplay/emptyForm";
 import { resolveImageSrc } from "@/lib/utils/googleDriveImage";
@@ -12,6 +12,7 @@ import AdminConventionField from "./AdminConventionField";
 import { AdminGalleryField, AdminImageField } from "./AdminImageField";
 import { AdminCosplayPartsEditor, applyPartsToCosplay } from "./AdminCosplayPartsEditor";
 import AdminCosplaySourcesEditor from "./AdminCosplaySourcesEditor";
+import AdminCosplayTodosEditor from "./AdminCosplayTodosEditor";
 import {
   AdminButton,
   AdminCard,
@@ -24,12 +25,13 @@ import {
 
 const STATUSES: CosplayStatus[] = ["planned", "in-progress", "completed", "retired"];
 
-type EditTab = "details" | "media" | "parts" | "sources";
+type EditTab = "details" | "media" | "parts" | "todos" | "sources";
 
 const TABS: { id: EditTab; label: string }[] = [
   { id: "details", label: "Details" },
   { id: "media", label: "Photos & Gallery" },
   { id: "parts", label: "Costume Parts" },
+  { id: "todos", label: "To-Do List" },
   { id: "sources", label: "Sources & Credits" },
 ];
 
@@ -40,6 +42,7 @@ function cloneForEdit(c: Cosplay): Partial<Cosplay> {
     tags: [...c.tags],
     progress: c.progress ? [...c.progress] : [],
     parts: c.parts ? c.parts.map((p) => ({ ...p })) : [],
+    todos: c.todos ? c.todos.map((t) => ({ ...t })) : [],
     sources: c.sources ? c.sources.map((s) => ({ ...s })) : [],
   };
 }
@@ -71,6 +74,9 @@ export default function AdminCosplayEditForm({
   extraConventionOptions?: string[];
 }) {
   const saveInFlight = useRef(false);
+  const todosSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const todosSaveInFlight = useRef(false);
+  const pendingTodosSave = useRef<{ cosplayId: string; todos: CosplayTodo[] } | null>(null);
   const [events, setEvents] = useState<ConEvent[]>(initialEvents ?? []);
   const [extraConventionOptions, setExtraConventionOptions] = useState<string[]>(initialConventionOptions ?? []);
   const [form, setForm] = useState<Partial<Cosplay>>(() => {
@@ -126,6 +132,8 @@ export default function AdminCosplayEditForm({
   }, [form.parts]);
 
   const ownedCount = form.parts?.filter((p) => p.owned).length ?? 0;
+  const openTodos = getOpenCosplayTodos(form.todos ?? []).length;
+  const todosCount = form.todos?.length ?? 0;
   const galleryCount = Array.isArray(form.gallery) ? form.gallery.length : 0;
   const sourcesCount = form.sources?.length ?? 0;
 
@@ -201,6 +209,43 @@ export default function AdminCosplayEditForm({
 
   function update(patch: Partial<Cosplay>) {
     setForm((prev) => ({ ...prev, ...patch }));
+  }
+
+  function scheduleTodosSave(cosplayId: string, todos: CosplayTodo[]) {
+    if (todosSaveTimer.current) clearTimeout(todosSaveTimer.current);
+    todosSaveTimer.current = setTimeout(() => {
+      void flushTodosSave(cosplayId, todos);
+    }, 500);
+  }
+
+  async function flushTodosSave(cosplayId: string, todos: CosplayTodo[]) {
+    pendingTodosSave.current = { cosplayId, todos };
+    if (todosSaveInFlight.current) return;
+
+    todosSaveInFlight.current = true;
+    while (pendingTodosSave.current) {
+      const { cosplayId: id, todos: batch } = pendingTodosSave.current;
+      pendingTodosSave.current = null;
+      try {
+        const res = await fetch("/api/admin/cosplays", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, todos: batch }),
+        });
+        if (!res.ok) throw new Error("save failed");
+        const saved = (await res.json()) as Cosplay;
+        setForm((prev) => ({ ...prev, todos: saved.todos ?? batch }));
+        setMessage("To-do list saved");
+      } catch {
+        setMessage("Could not save to-do list");
+      }
+    }
+    todosSaveInFlight.current = false;
+  }
+
+  function handleTodosChange(todos: CosplayTodo[]) {
+    update({ todos });
+    if (isEditing && form.id) scheduleTodosSave(form.id, todos);
   }
 
   const charArtSrc = form.characterArt ? resolveImageSrc(form.characterArt) : "";
@@ -322,6 +367,11 @@ export default function AdminCosplayEditForm({
             ) : null}
             {t.id === "media" && galleryCount > 0 ? (
               <span className="ml-1.5 opacity-70">({galleryCount})</span>
+            ) : null}
+            {t.id === "todos" && todosCount > 0 ? (
+              <span className="ml-1.5 opacity-70">
+                ({openTodos > 0 ? `${openTodos} open` : todosCount})
+              </span>
             ) : null}
             {t.id === "sources" && sourcesCount > 0 ? (
               <span className="ml-1.5 opacity-70">({sourcesCount})</span>
@@ -483,6 +533,16 @@ export default function AdminCosplayEditForm({
             expanded
             trackProgress={form.status !== "retired"}
             onChange={(parts) => update(applyPartsToCosplay({ ...form, parts }))}
+          />
+        </AdminCard>
+      )}
+
+      {tab === "todos" && (
+        <AdminCard className="p-5 sm:p-6">
+          <AdminCosplayTodosEditor
+            todos={form.todos ?? []}
+            onChange={handleTodosChange}
+            autoSave={isEditing && !!form.id}
           />
         </AdminCard>
       )}

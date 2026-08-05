@@ -318,7 +318,44 @@
   }
 
   .admin-table-row {
-    @apply border-t border-closet-pink/35 transition-colors hover:bg-closet-blush/20;
+    @apply border-t border-closet-pink/35 transition-colors hover:bg-closet-blush/25;
+  }
+
+  .admin-table-scroll {
+    @apply relative overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-table-scroll::before,
+  .admin-table-scroll::after {
+    content: "";
+    position: sticky;
+    top: 0;
+    bottom: 0;
+    width: 1rem;
+    pointer-events: none;
+    z-index: 5;
+    flex-shrink: 0;
+  }
+
+  .admin-table {
+    @apply border-collapse;
+  }
+
+  .admin-table thead th {
+    @apply whitespace-nowrap;
+  }
+
+  .admin-table tbody tr:nth-child(even) {
+    @apply bg-closet-blush/10;
+  }
+
+  .admin-table tbody tr:hover {
+    @apply bg-closet-blush/25;
+  }
+
+  .admin-table td {
+    @apply align-middle;
   }
 
   .admin-modal-backdrop {

@@ -23,6 +23,16 @@ import {
   AdminStatCard,
   AdminToast,
 } from "./ui";
+import {
+  AdminDataTable,
+  AdminTableActionsCell,
+  AdminTableActionsHeader,
+  AdminTableHead,
+  AdminTableMeta,
+  AdminTablePagination,
+  AdminTableSortHeader,
+  useClientPagination,
+} from "./AdminDataTable";
 
 type SortKey = "brand" | "character" | "color" | "length" | "style";
 type ViewMode = "cards" | "table";
@@ -108,11 +118,11 @@ function WigColorBadge({ color }: { color: string }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset"
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
       style={{
         background: badgeBackground,
         color: family === "black" || family === "navy" ? "#1c1917" : "#5c4033",
-        ringColor: `${from}55`,
+        boxShadow: `inset 0 0 0 1px ${from}55`,
       }}
     >
       <WigColorSwatch color={color} size="sm" />
@@ -261,6 +271,13 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
     });
     return sortWigs(matched, sortBy, sortDir);
   }, [wigs, query, brandFilter, lengthFilter, colorFilter, sortBy, sortDir]);
+
+  const pagination = useClientPagination(filtered, 50);
+
+  const sortLabel =
+    sortBy !== "brand" || sortDir !== "asc"
+      ? `sorted by ${SORT_LABELS[sortBy]} (${sortDir === "asc" ? "A→Z" : "Z→A"})`
+      : undefined;
 
   const stats = useMemo(
     () => ({
@@ -639,18 +656,15 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
           />
         ) : (
           <>
-            <div className="border-b border-closet-pink/50 px-4 py-3 text-xs font-semibold text-closet-brown-light sm:px-5">
-              Showing {filtered.length} of {wigs.length}
-              {sortBy !== "brand" || sortDir !== "asc" ? (
-                <span>
-                  {" "}
-                  · sorted by {SORT_LABELS[sortBy]} ({sortDir === "asc" ? "A→Z" : "Z→A"})
-                </span>
-              ) : null}
-            </div>
+            <AdminTableMeta
+              rangeStart={pagination.rangeStart}
+              rangeEnd={pagination.rangeEnd}
+              total={pagination.total}
+              sortLabel={sortLabel}
+            />
 
             <ul className="lg:hidden">
-              {filtered.map((w) => (
+              {pagination.pageItems.map((w) => (
                 <WigMobileRow
                   key={w.id}
                   wig={w}
@@ -669,7 +683,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
             <div className="hidden lg:block">
             {viewMode === "cards" ? (
               <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-3">
-                {filtered.map((w) => {
+                {pagination.pageItems.map((w) => {
                   const swatchBg = wigSwatchBackground(w.color);
                   const brandRing = BRAND_RING[w.brand] ?? "ring-closet-pink/40";
                   return (
@@ -723,68 +737,70 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
                 })}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                  <table className="w-full min-w-[720px] text-left text-sm">
-                    <thead className="sticky top-0 z-10 bg-closet-blush/95 text-xs uppercase tracking-wide text-closet-brown-light backdrop-blur-sm">
-                      <tr>
-                        {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
-                          <th key={key} className="px-3 py-3 font-bold first:pl-4 sm:px-4 sm:py-3.5 sm:first:pl-5">
-                            <button
-                              type="button"
-                              onClick={() => toggleSort(key)}
-                              className={`admin-btn-touch inline-flex min-h-[36px] items-center gap-1 hover:text-closet-rose ${
-                                sortBy === key ? "text-closet-rose" : ""
-                              }`}
-                            >
-                              {SORT_LABELS[key]}
-                              {sortBy === key && <span className="text-[10px]">{sortDir === "asc" ? "↑" : "↓"}</span>}
-                            </button>
-                          </th>
-                        ))}
-                        <th className="sticky right-0 z-20 bg-closet-blush/95 px-3 py-3 text-right font-bold sm:px-5 sm:py-3.5">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((w) => (
-                        <tr key={w.id} className="admin-table-row">
-                          <td className="px-3 py-3 sm:px-5 sm:py-3.5">
-                            <span className="font-bold text-closet-brown">{w.brand}</span>
-                          </td>
-                          <td className="px-3 py-3 sm:px-4 sm:py-3.5">{w.character || "—"}</td>
-                          <td className="px-3 py-3 sm:px-4 sm:py-3.5">
-                            <WigColorBadge color={w.color} />
-                          </td>
-                          <td className="px-3 py-3 text-closet-brown-light sm:px-4 sm:py-3.5">{w.length || "—"}</td>
-                          <td className="max-w-[140px] truncate px-3 py-3 text-closet-brown-light sm:max-w-none sm:px-4 sm:py-3.5">
-                            {w.style || "—"}
-                          </td>
-                          <td className="sticky right-0 bg-white/95 px-3 py-3 text-right backdrop-blur-sm sm:bg-transparent sm:px-5 sm:py-3.5 sm:backdrop-blur-none">
-                            <div className="flex justify-end gap-1">
-                              <AdminButton
-                                variant="ghost"
-                                className="admin-btn-touch text-xs"
-                                onClick={() => setEditing({ ...w })}
-                              >
-                                Edit
-                              </AdminButton>
-                              <AdminButton
-                                variant="danger"
-                                className="admin-btn-touch text-xs"
-                                onClick={() => remove(w.id)}
-                              >
-                                Remove
-                              </AdminButton>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-              </div>
+              <AdminDataTable minWidth={720}>
+                <AdminTableHead>
+                  <tr>
+                    {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+                      <AdminTableSortHeader
+                        key={key}
+                        label={SORT_LABELS[key]}
+                        active={sortBy === key}
+                        direction={sortBy === key ? sortDir : undefined}
+                        onSort={() => toggleSort(key)}
+                        className={key === "brand" ? "!pl-5" : ""}
+                      />
+                    ))}
+                    <AdminTableActionsHeader className="!px-5" />
+                  </tr>
+                </AdminTableHead>
+                <tbody>
+                  {pagination.pageItems.map((w) => (
+                    <tr key={w.id} className="group admin-table-row">
+                      <td className="px-5 py-3.5">
+                        <span className="font-bold text-closet-brown">{w.brand}</span>
+                      </td>
+                      <td className="px-4 py-3.5">{w.character || "—"}</td>
+                      <td className="px-4 py-3.5">
+                        <WigColorBadge color={w.color} />
+                      </td>
+                      <td className="px-4 py-3.5 text-closet-brown-light">{w.length || "—"}</td>
+                      <td className="max-w-[200px] px-4 py-3.5 text-closet-brown-light">
+                        <span className="line-clamp-2" title={w.style || undefined}>
+                          {w.style || "—"}
+                        </span>
+                      </td>
+                      <AdminTableActionsCell className="!px-5">
+                        <div className="flex justify-end gap-1">
+                          <AdminButton
+                            variant="ghost"
+                            className="admin-btn-touch text-xs"
+                            onClick={() => setEditing({ ...w })}
+                          >
+                            Edit
+                          </AdminButton>
+                          <AdminButton
+                            variant="danger"
+                            className="admin-btn-touch text-xs"
+                            onClick={() => remove(w.id)}
+                          >
+                            Remove
+                          </AdminButton>
+                        </div>
+                      </AdminTableActionsCell>
+                    </tr>
+                  ))}
+                </tbody>
+              </AdminDataTable>
             )}
             </div>
+
+            <AdminTablePagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              pageSize={pagination.pageSize}
+              onPageChange={pagination.setPage}
+              onPageSizeChange={pagination.setPageSize}
+            />
           </>
         )}
       </AdminCard>

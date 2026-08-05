@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     progress: body.progress,
     parts: body.parts,
     sources: body.sources,
+    todos: body.todos,
     featured: body.featured,
     spotlight: body.spotlight,
     sortOrder,

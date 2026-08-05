@@ -15,5 +15,6 @@ export function emptyCosplayForm(): Partial<Cosplay> {
     tags: [],
     progress: [{ label: "Overall", percent: 0 }],
     sources: [],
+    todos: [],
   };
 }

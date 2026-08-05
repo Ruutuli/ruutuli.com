@@ -4,22 +4,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  IconCalendar,
+  IconChecklist,
   IconCosplay,
   IconDashboard,
   IconExternal,
   IconGallery,
   IconLogout,
   IconSettings,
-  IconTasks,
   IconWig,
 } from "./icons";
 
 const links = [
   { href: "/admin", label: "Overview", icon: IconDashboard, exact: true },
+  { href: "/admin/todos", label: "To-Do List", icon: IconChecklist },
   { href: "/admin/cosplays", label: "Roster", icon: IconCosplay },
   { href: "/admin/gallery", label: "Gallery", icon: IconGallery },
   { href: "/admin/wigs", label: "Wigs", icon: IconWig },
-  { href: "/admin/tasks", label: "Build planner", icon: IconTasks },
+  { href: "/admin/events", label: "Events", icon: IconCalendar },
   { href: "/admin/media-kit", label: "Media Kit", icon: IconExternal },
   { href: "/admin/settings", label: "Settings", icon: IconSettings },
 ];

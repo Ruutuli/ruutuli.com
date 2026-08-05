@@ -122,21 +122,10 @@ export async function createCosplay(input: Omit<Cosplay, "id"> & { id?: string }
 
 export async function updateCosplay(id: string, patch: Partial<Cosplay>): Promise<Cosplay | null> {
   const collection = await getCollection<Cosplay & { _id: string }>(COLLECTIONS.cosplays);
+  const current = await collection.findOne({ _id: id });
+  if (!current) return null;
 
-  const hasFullDocument =
-    patch.id === id &&
-    typeof patch.character === "string" &&
-    typeof patch.series === "string";
-
-  let updated: Cosplay;
-  if (hasFullDocument) {
-    updated = { ...(patch as Cosplay), id };
-  } else {
-    const current = await collection.findOne({ _id: id });
-    if (!current) return null;
-    updated = { ...fromDoc(current), ...patch, id };
-  }
-
+  const updated: Cosplay = { ...fromDoc(current), ...patch, id };
   const synced = updated.parts?.length ? syncCosplayProgressFromParts(updated) : updated;
   const result = await collection.findOneAndReplace(
     { _id: id },
