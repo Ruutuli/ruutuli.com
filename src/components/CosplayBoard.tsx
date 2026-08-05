@@ -329,35 +329,47 @@ function sourceGroupRank(label: string): number {
 function SourceCard({ source }: { source: CosplaySource }) {
   const hostname = source.url ? linkHostname(source.url) : null;
   const hasImage = !!source.image && !isCosplayPlaceholderImage(source.image);
+
+  const cardClass =
+    "group flex h-full flex-col overflow-hidden rounded-2xl border border-closet-pink/45 bg-gradient-to-br from-white to-closet-blush/20 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-closet-rose/45 hover:shadow-closet-soft";
+
   const content = (
     <>
-      {hasImage ? (
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-closet-pink/40 bg-closet-blush">
+      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden border-b border-closet-pink/30 bg-closet-blush/35">
+        {hasImage ? (
           <GoogleDriveImage
             src={source.image!}
             alt=""
             fill
-            className="h-full w-full object-cover"
-            sizes="(max-width: 640px) 100vw, 280px"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            sizes="(max-width: 640px) 50vw, 280px"
           />
-        </div>
-      ) : null}
-      <div className="flex items-start justify-between gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-closet-pink/50 bg-closet-blush/50 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-closet-rose">
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-closet-rose/35">
+            <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </div>
+        )}
+        {source.url ? (
+          <span className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full border border-white/70 bg-white/90 text-closet-rose shadow-sm">
+            <ExternalLinkIcon />
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-closet-pink/50 bg-closet-blush/50 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-closet-rose">
           <SourceLabelIcon label={source.label} />
           {source.label}
         </span>
-        {source.url ? <ExternalLinkIcon /> : null}
+        <p className="text-sm font-semibold leading-snug text-closet-brown transition-colors group-hover:text-closet-rose">
+          {source.detail}
+        </p>
+        {hostname ? <p className="mt-auto truncate text-xs text-closet-brown-light">{hostname}</p> : null}
       </div>
-      <p className="text-sm font-semibold leading-snug text-closet-brown transition-colors group-hover:text-closet-rose">
-        {source.detail}
-      </p>
-      {hostname ? <p className="truncate text-xs text-closet-brown-light">{hostname}</p> : null}
     </>
   );
-
-  const cardClass =
-    "group flex h-full flex-col gap-3 rounded-2xl border border-closet-pink/45 bg-gradient-to-br from-white to-closet-blush/20 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-closet-rose/45 hover:shadow-closet-soft";
 
   if (source.url) {
     return (
@@ -379,17 +391,12 @@ function CosplaySourcesList({
   cosplayId: string;
   isAdmin: boolean;
 }) {
-  const grouped = useMemo(() => {
-    const map = new Map<string, CosplaySource[]>();
-    for (const source of sources) {
-      const label = source.label.trim() || "Other";
-      const bucket = map.get(label) ?? [];
-      bucket.push(source);
-      map.set(label, bucket);
-    }
-    return [...map.entries()]
-      .sort(([a], [b]) => sourceGroupRank(a) - sourceGroupRank(b))
-      .map(([label, items]) => ({ label, items }));
+  const sortedSources = useMemo(() => {
+    return [...sources].sort((a, b) => {
+      const rankDiff = sourceGroupRank(a.label) - sourceGroupRank(b.label);
+      if (rankDiff !== 0) return rankDiff;
+      return a.detail.localeCompare(b.detail);
+    });
   }, [sources]);
 
   const linkCount = sources.filter((s) => s.url).length;
@@ -420,7 +427,7 @@ function CosplaySourcesList({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-closet-pink/40 bg-closet-blush/20 px-4 py-3.5 sm:px-5">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-closet-rose">Build resources</p>
@@ -439,24 +446,11 @@ function CosplaySourcesList({
         ) : null}
       </div>
 
-      {grouped.map(({ label, items }) => (
-        <div key={label}>
-          {grouped.length > 1 ? (
-            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-closet-rose">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-closet-blush/60">
-                <SourceLabelIcon label={label} />
-              </span>
-              {label}
-              <span className="font-semibold text-closet-brown-light">({items.length})</span>
-            </h3>
-          ) : null}
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {items.map((source, i) => (
-              <SourceCard key={`${label}-${source.detail}-${i}`} source={source} />
-            ))}
-          </div>
-        </div>
-      ))}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {sortedSources.map((source, i) => (
+          <SourceCard key={`${source.label}-${source.detail}-${i}`} source={source} />
+        ))}
+      </div>
     </div>
   );
 }
