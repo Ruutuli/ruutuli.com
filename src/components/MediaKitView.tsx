@@ -5,12 +5,12 @@ import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import SectionHeading from "@/components/SectionHeading";
 
 const collabTypes = [
-  "Convention panels, meetups, and guest appearances",
-  "Brand features, unboxings, and product spotlights",
-  "Sponsored streams and variety content",
-  "Event coverage — cosplay, gaming, and con life",
-  "Photoshoots and styled character work",
-  "Live2D rigging and VTuber-related projects",
+  "Con panels and guest spots",
+  "Brand stuff — unboxings, features, that kind of thing",
+  "Sponsored streams",
+  "Con coverage",
+  "Photoshoots",
+  "Live2D rigging and VTuber work",
 ];
 
 function SocialLink({ href, label }: { href: string; label: string }) {
@@ -35,7 +35,7 @@ export default function MediaKitView() {
       <SectionHeading
         eyebrow="for brands & events"
         title="Media Kit"
-        description="Stats, links, and the basics if you want to work together. No pitch deck — just the stuff you'd actually need."
+        description="Stats, links, and contact info. No pitch deck — just what you'd actually need."
       />
 
       <div className="mx-auto grid max-w-4xl gap-6">
@@ -47,8 +47,7 @@ export default function MediaKitView() {
             <p className="text-base font-medium leading-relaxed text-closet-brown">{siteConfig.roles}</p>
             <p className="text-base leading-relaxed text-closet-brown-light">{siteConfig.bio}</p>
             <p className="text-base leading-relaxed text-closet-brown-light">
-              Cosplay builds, streams, art, rigging — this site is where I stash the portfolio stuff. Roster,
-              WIPs, calendar, all of it.
+              Cosplay, streams, art, rigging — this site has the roster, WIPs, calendar, all of it.
             </p>
           </div>
         </section>
@@ -59,7 +58,7 @@ export default function MediaKitView() {
           </div>
           <div className="closet-panel-body space-y-4">
             <p className="text-sm text-closet-brown-light">
-              Email is best for collab inquiries. DMs work too if that&apos;s easier.
+              Email works best. DMs are fine too.
             </p>
             {siteConfig.contactEmail && (
               <a
@@ -96,11 +95,11 @@ export default function MediaKitView() {
 
         <section className="closet-panel-outer animate-fade-up [animation-delay:160ms]">
           <div className="closet-panel-header">
-            <h2 className="font-sans text-xl font-bold text-closet-brown">Portfolio</h2>
+            <h2 className="font-sans text-xl font-bold text-closet-brown">On the site</h2>
           </div>
           <div className="closet-panel-body flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm leading-relaxed text-closet-brown-light">
-              Completed builds, in-progress WIPs, and con plans live on the site.
+              Finished builds, WIPs, and con plans are all here.
             </p>
             <Link href="/roster" className="closet-btn-peach btn-shimmer shrink-0 !px-6 !py-2.5 text-sm">
               View roster

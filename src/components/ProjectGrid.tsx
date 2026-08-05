@@ -5,13 +5,6 @@ import { getCosplayDisplayImage } from "@/lib/cosplay/images";
 import { Cosplay } from "@/types/cosplay";
 import RosterImageSlot from "./RosterImageSlot";
 
-function categoryTag(series: string): string {
-  const s = series.toLowerCase();
-  if (s.includes("final fantasy") || s.includes("zelda") || s.includes("game")) return "Gaming";
-  if (s.includes("dragon ball") || s.includes("anime")) return "Anime";
-  return "Cosplay";
-}
-
 function CardAction({
   href,
   label,
@@ -56,9 +49,6 @@ function RosterCard({ cosplay }: { cosplay: Cosplay }) {
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-closet-brown/80 via-closet-brown/35 to-transparent pt-10" />
           <div className="absolute inset-x-0 bottom-0 p-3">
             <h3 className="font-sans text-lg font-bold text-white">{cosplay.character}</h3>
-            <span className="mt-1 inline-flex rounded-full bg-white/20 px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
-              {categoryTag(cosplay.series)}
-            </span>
           </div>
         </div>
 
@@ -81,11 +71,6 @@ function RosterCard({ cosplay }: { cosplay: Cosplay }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
           </svg>
         </CardAction>
-        <CardAction href="#focus" label={`View ${cosplay.character} build journal`}>
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-        </CardAction>
         <CardAction href="/roster" label="View full roster">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h.01M12 12h.01M19 12h.01" />
@@ -102,10 +87,10 @@ export default function ProjectGrid({ cosplays }: { cosplays: Cosplay[] }) {
   return (
     <section
       id="projects"
-      className="cosplan-panel col-span-12 flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden animate-fade-up [animation-delay:200ms] lg:col-span-9"
+      className="cosplan-panel flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden animate-fade-up [animation-delay:200ms]"
     >
       <div className="cosplan-panel-header justify-between">
-        <h2 className="font-sans text-base font-bold text-closet-brown sm:text-lg">Featured Roster</h2>
+        <h2 className="font-sans text-base font-bold text-closet-brown sm:text-lg">Random Roster</h2>
         <Link
           href="/roster"
           className="cosplan-focus-ring text-sm font-semibold text-closet-rose transition-colors hover:text-closet-mauve"
@@ -116,9 +101,9 @@ export default function ProjectGrid({ cosplays }: { cosplays: Cosplay[] }) {
 
       {projects.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-          <p className="font-sans text-lg font-bold text-closet-brown">No featured builds yet</p>
+          <p className="font-sans text-lg font-bold text-closet-brown">No builds in roster yet</p>
           <p className="mt-2 max-w-sm text-sm text-closet-brown-light">
-            Active in-progress projects will appear here once you add them to the roster.
+            Three random builds show up here once you&apos;ve got cosplays in the roster.
           </p>
           <Link href="/roster" className="cosplan-focus-ring mt-4 text-sm font-semibold text-closet-rose hover:text-closet-mauve">
             Browse roster →

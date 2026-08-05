@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteConfig();
   return {
     title: `Character Roster | ${site.name}`,
-    description: "Every character cosplayed — completed, in progress, planned, and retired.",
+    description: "Characters I've cosplayed, by status.",
   };
 }
 

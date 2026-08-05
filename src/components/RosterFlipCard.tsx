@@ -154,7 +154,7 @@ export default function RosterFlipCard({ cosplay }: RosterFlipCardProps) {
     <Link
       href={`/roster/${cosplay.id}`}
       className="group roster-flip-card focus:outline-none focus-visible:ring-2 focus-visible:ring-closet-pink focus-visible:ring-offset-2"
-      aria-label={`Open ${cosplay.character} cosplan board`}
+      aria-label={`Open ${cosplay.character} build page`}
     >
       <div className="roster-flip-shell">
         <div className="roster-flip-inner">

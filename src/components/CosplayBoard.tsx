@@ -277,7 +277,7 @@ export default function CosplayBoard({
           <span className="font-semibold text-closet-brown">{cosplay.character}</span>
         </nav>
         <Link href={`/admin/cosplays/${cosplay.id}/edit`} className="closet-btn-outline !py-1.5 !text-xs sm:!text-sm">
-          Edit Project
+          Edit
         </Link>
       </div>
 
@@ -432,7 +432,7 @@ export default function CosplayBoard({
             <div className="p-4 sm:p-6">
               {checklistGroups.length === 0 ? (
                 <p className="py-6 text-center text-sm text-closet-brown-light">
-                  No costume pieces logged yet.
+                  Nothing on the checklist yet.
                 </p>
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -485,7 +485,7 @@ export default function CosplayBoard({
                   variant="compact"
                   maxVisible={4}
                   getFallbackLabel={(src, i) => cosplay.convention || labelPhoto(src, i)}
-                  emptyMessage="No gallery photos yet. Tag photos as Gallery in the admin gallery."
+                  emptyMessage="No photos tagged yet."
                 />
               </div>
 
@@ -589,7 +589,7 @@ export default function CosplayBoard({
           <div className="p-4 sm:p-6">
             {(cosplay.parts ?? []).length === 0 ? (
               <p className="py-8 text-center text-sm text-closet-brown-light">
-                No parts checklist for this build.
+                Nothing here yet.
               </p>
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -676,7 +676,7 @@ export default function CosplayBoard({
           <div className="p-4 sm:p-6">
             {conventionPhotos.length === 0 ? (
               <p className="py-12 text-center text-sm text-closet-brown-light">
-                No gallery photos yet. Tag photos as Gallery in the admin gallery.
+                No photos tagged yet.
               </p>
             ) : (
               <CosplayPhotoGallery
@@ -684,7 +684,7 @@ export default function CosplayBoard({
                 photoCredits={photoCredits}
                 characterName={cosplay.character}
                 getFallbackLabel={(src, i) => cosplay.convention || labelPhoto(src, i)}
-                emptyMessage="Gallery photos will show up here once tagged in the admin gallery."
+                emptyMessage="Nothing here yet."
               />
             )}
           </div>
@@ -703,7 +703,7 @@ export default function CosplayBoard({
           <ul className="divide-y divide-closet-pink/35 px-4 py-2">
             {tasks.length === 0 ? (
               <li className="py-8 text-center text-sm text-closet-brown-light">
-                No build notes or tasks linked to this cosplay yet.
+                No notes or tasks yet.
               </li>
             ) : (
               tasks.map((task) => {

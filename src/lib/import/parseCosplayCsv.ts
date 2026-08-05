@@ -128,18 +128,15 @@ function partsProgress(parts: CosplayPart[]): number | null {
 }
 
 function buildDescription(
-  character: string,
-  series: string,
-  outfit: string,
+  _character: string,
+  _series: string,
+  _outfit: string,
   convention: string | undefined,
   percent: number,
 ): string {
-  const parts = [`${character} from ${series}`];
-  if (outfit && outfit.toLowerCase() !== "default") parts.push(`(${outfit})`);
-  if (convention && percent >= 100) parts.push(`Worn at ${convention}.`);
-  else if (convention) parts.push(`Target: ${convention}.`);
-  parts.push(`${percent}% complete.`);
-  return parts.join(" ");
+  if (convention && percent >= 100) return `Worn at ${convention}.`;
+  if (convention) return `For ${convention}.`;
+  return "";
 }
 
 export function parseCosplaysFromCsvRows(rows: string[][]): Cosplay[] {

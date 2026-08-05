@@ -232,7 +232,7 @@ export default function CosplayPhotoGallery({
   photos,
   photoCredits = {},
   characterName,
-  emptyMessage = "Photos coming soon!",
+  emptyMessage = "No photos yet.",
   variant = "standard",
   getFallbackLabel,
   className = "",

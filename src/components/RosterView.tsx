@@ -51,7 +51,7 @@ export default function RosterView({ cosplays }: { cosplays: Cosplay[] }) {
       <SectionHeading
         eyebrow="Character Roster"
         title="Cosplayed Characters"
-        description="Hover a card to see the cosplay photo. Click any character to open their full build board."
+        description="Hover for the cosplay pic. Click to open the build page."
       />
 
       <div className="mb-10 flex flex-col gap-5">

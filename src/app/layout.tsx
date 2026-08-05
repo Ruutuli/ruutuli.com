@@ -44,7 +44,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const siteConfig = await getSiteConfig();
+  let siteConfig;
+  try {
+    siteConfig = await getSiteConfig();
+  } catch {
+    siteConfig = mergeSiteConfig(defaultSiteSettings);
+  }
 
   return (
     <html lang="en" className={`${display.variable} ${sans.variable}`}>

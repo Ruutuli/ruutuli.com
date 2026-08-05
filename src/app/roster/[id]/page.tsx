@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const [cosplay, site] = await Promise.all([getCosplayById(id), getSiteConfig()]);
   if (!cosplay) return { title: `Cosplay | ${site.name}` };
   return {
-    title: `${cosplay.character} | Cosplan Studio | ${site.name}`,
+    title: `${cosplay.character} | ${site.name}`,
     description: cosplay.description || `${cosplay.character} from ${cosplay.series}`,
   };
 }

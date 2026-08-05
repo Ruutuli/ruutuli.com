@@ -4,7 +4,6 @@ import { BuildTask } from "@/types/task";
 import DashboardWelcome from "@/components/DashboardWelcome";
 import FeaturedProject from "@/components/FeaturedProject";
 import ProjectGrid from "@/components/ProjectGrid";
-import WeekTasks from "@/components/WeekTasks";
 
 interface CosplanDashboardProps {
   cosplays: Cosplay[];
@@ -18,10 +17,7 @@ export default function CosplanDashboard({ cosplays, tasks, events }: CosplanDas
       <div className="space-y-6 pb-10 pt-4 sm:space-y-8 sm:pb-12 lg:pt-5">
         <DashboardWelcome cosplays={cosplays} tasks={tasks} />
         <FeaturedProject cosplays={cosplays} tasks={tasks} events={events} />
-        <div className="cosplan-layout">
-          <ProjectGrid cosplays={cosplays} />
-          <WeekTasks tasks={tasks} />
-        </div>
+        <ProjectGrid cosplays={cosplays} />
       </div>
     </div>
   );

@@ -60,10 +60,27 @@ export default function FeaturedProject({
       {cosplay ? (
         <Link
           href={`/roster/${cosplay.id}`}
-          className="cosplan-focus-ring group relative col-span-12 grid min-h-[220px] grid-cols-1 overflow-hidden rounded-3xl border border-closet-pink/35 bg-white shadow-closet transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/25 hover:shadow-closet-lg lg:col-span-8 lg:min-h-[260px] lg:grid-cols-[minmax(0,1fr)_minmax(200px,38%)]"
+          className="cosplan-focus-ring group relative col-span-12 block min-h-[240px] overflow-hidden rounded-3xl border border-closet-pink/35 bg-white shadow-closet transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/25 hover:shadow-closet-lg lg:col-span-8 lg:min-h-[280px]"
         >
-          {/* Info + progress — always first (left on desktop) */}
-          <div className="relative z-10 flex min-w-0 flex-col p-5 sm:p-6">
+          {/* Character — anchored bottom-right, never overlaps text column */}
+          <div
+            className="pointer-events-none absolute bottom-0 right-0 top-0 w-[46%] max-w-[260px] sm:w-[42%] lg:w-[40%] lg:max-w-[300px]"
+            aria-hidden
+          >
+            <RosterImageSlot
+              src={cover}
+              alt=""
+              emptyLabel={cosplay.character}
+              className="object-contain object-bottom transition-transform duration-700 group-hover:scale-[1.02]"
+              objectPosition={artPosition}
+              sizes="(max-width: 1024px) 42vw, 300px"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/30 to-transparent sm:via-white/15 lg:via-transparent" />
+          </div>
+
+          {/* Info + progress — left column only */}
+          <div className="relative z-10 flex min-h-[240px] flex-col p-5 pr-[48%] sm:p-6 sm:pr-[44%] lg:min-h-[280px] lg:pr-[42%]">
             <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-closet-rose">
               Current Build
             </p>
@@ -102,30 +119,13 @@ export default function FeaturedProject({
               <ChevronRight />
             </span>
           </div>
-
-          {/* Character — mobile: behind text on right; desktop: right column, bottom-anchored */}
-          <div
-            className="pointer-events-none absolute bottom-0 right-0 z-0 h-[58%] w-[52%] sm:h-[62%] sm:w-[46%] lg:static lg:col-start-2 lg:row-start-1 lg:h-full lg:w-full lg:max-w-none"
-            aria-hidden
-          >
-            <RosterImageSlot
-              src={cover}
-              alt=""
-              emptyLabel={cosplay.character}
-              className="object-contain object-bottom transition-transform duration-700 group-hover:scale-[1.02]"
-              objectPosition={artPosition}
-              sizes="(max-width: 1024px) 46vw, 280px"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent lg:from-white/20 lg:via-transparent lg:to-transparent" />
-          </div>
         </Link>
       ) : (
         <article className="col-span-12 flex min-h-[220px] flex-col justify-center rounded-3xl border border-closet-pink/35 bg-white p-6 shadow-closet lg:col-span-8">
           <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-closet-rose">Current Build</p>
-          <h2 className="mt-2 font-sans text-xl font-bold text-closet-brown">No active build spotlighted</h2>
+          <h2 className="mt-2 font-sans text-xl font-bold text-closet-brown">Nothing featured right now</h2>
           <p className="mt-1 max-w-md text-sm text-closet-brown-light">
-            Mark a project as your spotlight build in admin, or browse the roster to pick up where you left off.
+            Pick a build in admin to show here, or check the roster.
           </p>
           <Link
             href="/roster"
@@ -167,13 +167,13 @@ export default function FeaturedProject({
               ) : (
                 <>
                   <h3 className="font-sans text-xl font-bold text-closet-brown">Nothing scheduled</h3>
-                  <p className="mt-0.5 text-sm text-closet-brown-light">Add a convention to your calendar when plans firm up.</p>
+                  <p className="mt-0.5 text-sm text-closet-brown-light">Add one in admin when you know where you&apos;re going.</p>
                 </>
               )}
             </div>
           </div>
           <Link href="/calendar" className="cosplan-side-card-action group">
-            View Details
+            View calendar
             <ChevronRight />
           </Link>
         </article>
@@ -202,10 +202,10 @@ export default function FeaturedProject({
               )}
             </div>
           </div>
-          <a href="#focus" className="cosplan-side-card-action group">
+          <Link href="/admin/tasks" className="cosplan-side-card-action group">
             View Tasks
             <ChevronRight />
-          </a>
+          </Link>
         </article>
       </div>
     </div>

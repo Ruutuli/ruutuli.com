@@ -114,7 +114,7 @@ function eventsFromCosplays(cosplays: Cosplay[]): CalendarEvent[] {
         date: parseDayKey(cosplay.deadline),
         type: "deadline",
         cosplayId: cosplay.id,
-        description: cosplay.convention ? `Target: ${cosplay.convention}` : cosplay.series,
+        description: cosplay.convention ?? cosplay.series,
       });
     }
   }

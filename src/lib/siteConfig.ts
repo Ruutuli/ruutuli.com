@@ -25,14 +25,17 @@ export function getActiveBuilds(cosplays: Cosplay[]): Cosplay[] {
   return cosplays.filter((c) => c.status === "in-progress");
 }
 
-export function getDashboardProjects(cosplays: Cosplay[]): Cosplay[] {
+export function getDashboardProjects(cosplays: Cosplay[], limit = 3): Cosplay[] {
   const spotlight = getSpotlightCosplay(cosplays);
-  return cosplays
-    .filter(
-      (c) =>
-        c.id !== spotlight?.id && c.status !== "completed" && c.status !== "retired",
-    )
-    .slice(0, 3);
+  const pool = cosplays.filter((c) => c.id !== spotlight?.id);
+  if (pool.length <= limit) return pool;
+
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, limit);
 }
 
 export function getCosplayProgressPercent(cosplay: Cosplay): number {

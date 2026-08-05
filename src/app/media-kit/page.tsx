@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteConfig();
   return {
     title: `Media Kit | ${site.name}`,
-    description: "Links, collab info, and portfolio highlights for brands and events.",
+    description: "Contact info and links for brands and events.",
   };
 }
 

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Calendar | Ruutuli Cosplay",
-  description: "Conventions, photoshoots, deadlines, and cosplay milestones.",
+  description: "Cons, shoots, and build deadlines.",
 };
 
 export default async function CalendarPage() {

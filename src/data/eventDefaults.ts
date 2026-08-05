@@ -15,6 +15,6 @@ export const defaultEvents: ConEvent[] = [
     date: "2026-09-04",
     endDate: "2026-09-07",
     location: "Atlanta, GA",
-    description: "Convention season",
+    description: "TBD",
   },
 ];

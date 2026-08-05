@@ -104,7 +104,7 @@ export default function CalendarView({ events, cosplays }: CalendarViewProps) {
         <SectionHeading
           eyebrow="Schedule"
           title="Cosplay Calendar"
-          description="Conventions, shoots, deadlines, and project milestones — all in one place."
+          description="Cons, shoots, deadlines — whatever's coming up."
         />
 
         <div className="grid animate-fade-up gap-8 xl:grid-cols-[1fr_360px]">
