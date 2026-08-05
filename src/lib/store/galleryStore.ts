@@ -120,6 +120,30 @@ export async function addGalleryExclusion(driveFileId: string): Promise<void> {
   );
 }
 
+export async function getGalleryExclusionCount(): Promise<number> {
+  const collection = await getCollection<{ _id: string }>(COLLECTIONS.galleryExclusions);
+  return collection.countDocuments();
+}
+
+/** Clear the exclusion list so previously removed photos can sync back from Drive. */
+export async function clearGalleryExclusions(): Promise<{ cleared: number }> {
+  const collection = await getCollection<{ _id: string }>(COLLECTIONS.galleryExclusions);
+  const result = await collection.deleteMany({});
+  return { cleared: result.deletedCount ?? 0 };
+}
+
+/** Re-import photos that were removed from the gallery catalog (files stay on Drive). */
+export async function restoreGalleryFromDrive(): Promise<{
+  cleared: number;
+  synced: number;
+  skipped: number;
+  folderIds: string[];
+}> {
+  const { cleared } = await clearGalleryExclusions();
+  const result = await syncGalleryFromDrive();
+  return { cleared, ...result };
+}
+
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -190,7 +214,8 @@ function galleryMongoSort(filters: GalleryListFilters): Record<string, 1 | -1> {
 
 async function getGalleryStats(): Promise<GalleryListResult["stats"]> {
   const collection = await getCollection<GalleryDoc>(COLLECTIONS.galleryItems);
-  const [result] = await collection
+  const [aggregateResult, excluded] = await Promise.all([
+    collection
     .aggregate<{
       total: number;
       published: number;
@@ -220,9 +245,12 @@ async function getGalleryStats(): Promise<GalleryListResult["stats"]> {
         },
       },
     ])
-    .toArray();
+    .toArray(),
+    getGalleryExclusionCount(),
+  ]);
 
-  return result ?? { total: 0, published: 0, unpublished: 0, unlinked: 0 };
+  const base = aggregateResult[0] ?? { total: 0, published: 0, unpublished: 0, unlinked: 0 };
+  return { ...base, excluded };
 }
 
 async function getGalleryFolderFacets(): Promise<{ id: string; name: string }[]> {

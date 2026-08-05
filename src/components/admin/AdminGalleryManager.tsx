@@ -27,7 +27,7 @@ interface GalleryListResponse {
   total: number;
   page: number;
   limit: number;
-  stats: { total: number; published: number; unpublished: number; unlinked: number };
+  stats: { total: number; published: number; unpublished: number; unlinked: number; excluded: number };
   facets: { conventions: string[]; photographers: string[]; folders: { id: string; name: string }[] };
 }
 
@@ -60,7 +60,7 @@ export default function AdminGalleryManager({
   const [events, setEvents] = useState<ConEvent[]>(initialEvents ?? []);
   const [referenceLoading, setReferenceLoading] = useState(!initialCosplays?.length || !initialEvents?.length);
   const [items, setItems] = useState<GalleryItem[]>([]);
-  const [stats, setStats] = useState({ total: 0, published: 0, unpublished: 0, unlinked: 0 });
+  const [stats, setStats] = useState({ total: 0, published: 0, unpublished: 0, unlinked: 0, excluded: 0 });
   const [facets, setFacets] = useState<{ conventions: string[]; photographers: string[]; folders: { id: string; name: string }[] }>({
     conventions: [],
     photographers: [],
@@ -83,6 +83,7 @@ export default function AdminGalleryManager({
   const [liveOnly, setLiveOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [message, setMessage] = useState("");
   const [showAddLinks, setShowAddLinks] = useState(false);
   const [linkInput, setLinkInput] = useState("");
@@ -497,6 +498,35 @@ export default function AdminGalleryManager({
 
     const data = (await res.json()) as { synced: number; skipped: number };
     setMessage(`Synced ${data.synced} images${data.skipped ? ` (${data.skipped} skipped)` : ""}`);
+    void loadItems();
+  }
+
+  async function restoreFromDrive() {
+    const countLabel = stats.excluded > 0 ? `${stats.excluded.toLocaleString()} previously removed photo${stats.excluded === 1 ? "" : "s"}` : "previously removed photos";
+    if (
+      !confirm(
+        `Restore ${countLabel} from Google Drive?\n\nThis clears the removal block list and re-imports those files. Tags and publish status will need to be set again.`,
+      )
+    ) {
+      return;
+    }
+
+    setRestoring(true);
+    const res = await fetch("/api/admin/gallery/restore", { method: "POST" });
+    setRestoring(false);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setMessage(data.error ? `${data.error}${data.hint ? ` — ${data.hint}` : ""}` : "Restore failed");
+      return;
+    }
+
+    const data = (await res.json()) as { cleared: number; synced: number; skipped: number };
+    setMessage(
+      `Restored ${data.synced} image${data.synced === 1 ? "" : "s"} from Drive${
+        data.cleared ? ` (cleared ${data.cleared} removal${data.cleared === 1 ? "" : "s"})` : ""
+      }${data.skipped ? ` · ${data.skipped} skipped` : ""}`,
+    );
     void loadItems();
   }
 
@@ -926,7 +956,12 @@ export default function AdminGalleryManager({
             <AdminButton variant="secondary" onClick={() => setShowAddLinks((v) => !v)}>
               Add by link
             </AdminButton>
-            <AdminButton variant="primary" onClick={syncFromDrive} disabled={syncing}>
+            {stats.excluded > 0 && (
+              <AdminButton variant="secondary" onClick={restoreFromDrive} disabled={restoring || syncing}>
+                {restoring ? "Restoring…" : `Restore removed (${stats.excluded.toLocaleString()})`}
+              </AdminButton>
+            )}
+            <AdminButton variant="primary" onClick={syncFromDrive} disabled={syncing || restoring}>
               {syncing ? "Syncing…" : "Sync from Drive"}
             </AdminButton>
           </div>
@@ -939,6 +974,22 @@ export default function AdminGalleryManager({
         <AdminStatCard label="Not live" value={stats.unpublished} hint="Hidden from the public site" accent="peach" />
         <AdminStatCard label="Unlinked" value={stats.unlinked} hint="No cosplay linked" accent="brown" />
       </div>
+
+      {stats.excluded > 0 && (
+        <AdminCard className="flex flex-col gap-3 border-closet-peach/60 bg-closet-peach/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div>
+            <p className="font-semibold text-closet-brown">
+              {stats.excluded.toLocaleString()} photo{stats.excluded === 1 ? "" : "s"} removed from gallery
+            </p>
+            <p className="mt-1 text-sm text-closet-brown-light">
+              Still on Google Drive — restore brings them back. You&apos;ll need to re-tag and publish them.
+            </p>
+          </div>
+          <AdminButton variant="primary" onClick={restoreFromDrive} disabled={restoring || syncing}>
+            {restoring ? "Restoring…" : "Restore from Drive"}
+          </AdminButton>
+        </AdminCard>
+      )}
 
       {showAddLinks && (
         <AdminCard className="p-5">
@@ -1200,7 +1251,11 @@ export default function AdminGalleryManager({
         ) : items.length === 0 ? (
           <AdminEmptyState
             title="No gallery images yet"
-            description='Click "Sync from Drive" to import photos, then filter by subfolder below.'
+            description={
+              stats.excluded > 0
+                ? 'Photos were removed from the gallery but are still on Drive. Click "Restore from Drive" above to bring them back.'
+                : 'Click "Sync from Drive" to import photos, then filter by subfolder below.'
+            }
           />
         ) : (
           <>
@@ -1409,8 +1464,8 @@ export default function AdminGalleryManager({
             <div className="space-y-2 text-center sm:text-left">
               <p className="font-semibold text-closet-brown">{pendingRemove.name}</p>
               <p className="text-sm text-closet-brown-light">
-                This removes the photo from your gallery only. The file stays on Google Drive and won&apos;t come back
-                when you sync.
+                This removes the photo from your gallery only. The file stays on Google Drive. Use{" "}
+                <strong>Restore from Drive</strong> to bring it back.
               </p>
             </div>
           </div>
@@ -1557,8 +1612,8 @@ export default function AdminGalleryManager({
                 : `Remove ${selectedIds.size} selected photo${selectedIds.size === 1 ? "" : "s"}?`}
             </p>
             <p className="text-sm text-closet-brown-light">
-              This removes them from your gallery only. Files stay on Google Drive and won&apos;t come back when you
-              sync.
+              This removes them from your gallery only. Files stay on Google Drive. Use{" "}
+              <strong>Restore from Drive</strong> to bring them back.
             </p>
           </div>
         </AdminModal>

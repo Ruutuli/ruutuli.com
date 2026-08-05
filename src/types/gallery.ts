@@ -90,6 +90,8 @@ export interface GalleryListResult {
     published: number;
     unpublished: number;
     unlinked: number;
+    /** Photos removed from gallery catalog; still on Drive until re-synced. */
+    excluded: number;
   };
   facets: {
     conventions: string[];
