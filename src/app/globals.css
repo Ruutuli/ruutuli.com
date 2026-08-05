@@ -598,6 +598,12 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .mediakit-banner-layer {
+  pointer-events: none;
+}
+
+.mediakit-banner-layer-fading {
+  transition-property: opacity;
+  transition-timing-function: ease-in-out;
   will-change: opacity;
 }
 

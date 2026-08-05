@@ -10,7 +10,7 @@ import { GalleryBannerPhoto } from "@/types/gallery";
 const SLOT_COUNT = 5;
 /** Time between each panel swap — calm, even rhythm */
 const SWAP_MS = 5500;
-const FADE_MS = 900;
+const FADE_MS = 1200;
 
 function isProxyImageUrl(url: string): boolean {
   return url.includes("/api/images/proxy");
@@ -63,6 +63,48 @@ function initialSlots(pool: GalleryBannerPhoto[], count: number): GalleryBannerP
   return Array.from({ length: count }, (_, index) => unique[index % unique.length]);
 }
 
+async function loadBannerPhoto(url: string): Promise<HTMLImageElement | null> {
+  const attempts = buildImageLoadAttempts(url);
+  if (attempts.length === 0) return null;
+
+  for (let index = 0; index < attempts.length; index++) {
+    const attemptUrl = attempts[index]!;
+    const result = await new Promise<HTMLImageElement | "retry" | "fail">((resolve) => {
+      const img = new Image();
+      img.referrerPolicy = "no-referrer";
+      img.onload = () => {
+        if (
+          isTinyPlaceholderImage(img.naturalWidth, img.naturalHeight) &&
+          isProxyImageUrl(attemptUrl) &&
+          index + 1 < attempts.length
+        ) {
+          resolve("retry");
+          return;
+        }
+        resolve(img);
+      };
+      img.onerror = () => resolve(index + 1 < attempts.length ? "retry" : "fail");
+      img.src = attemptUrl;
+    });
+
+    if (result === "retry") continue;
+    if (result === "fail") return null;
+
+    try {
+      await result.decode();
+    } catch {
+      /* decoded or unsupported — still usable */
+    }
+    return result;
+  }
+
+  return null;
+}
+
+function preloadBannerPhoto(photo: GalleryBannerPhoto): Promise<void> {
+  return loadBannerPhoto(photo.src).then(() => undefined);
+}
+
 function BannerImage({
   photo,
   onReady,
@@ -82,7 +124,13 @@ function BannerImage({
   const displayUrl = attempts[attemptIndex];
   if (!displayUrl) return null;
 
-  const markReady = () => {
+  const markReady = async (img: HTMLImageElement) => {
+    if (readyRef.current) return;
+    try {
+      await img.decode();
+    } catch {
+      /* ignore */
+    }
     if (readyRef.current) return;
     readyRef.current = true;
     onReady?.();
@@ -95,8 +143,8 @@ function BannerImage({
       alt={photo.alt}
       className="absolute inset-0 h-full w-full object-cover object-top"
       referrerPolicy="no-referrer"
-      decoding="sync"
-      fetchPriority="high"
+      decoding="async"
+      draggable={false}
       onLoad={(event) => {
         const img = event.currentTarget;
         const currentUrl = attempts[attemptIndex] ?? displayUrl;
@@ -109,7 +157,7 @@ function BannerImage({
           setAttemptIndex((index) => index + 1);
           return;
         }
-        markReady();
+        void markReady(img);
       }}
       onError={() => {
         if (attemptIndex + 1 < attempts.length) {
@@ -117,62 +165,63 @@ function BannerImage({
           setAttemptIndex((index) => index + 1);
           return;
         }
-        markReady();
+        void markReady(document.createElement("img"));
       }}
     />
   );
 }
 
 function BannerSlot({ image }: { image: GalleryBannerPhoto }) {
-  const [layers, setLayers] = useState<[GalleryBannerPhoto, GalleryBannerPhoto]>(() => [image, image]);
-  const [front, setFront] = useState(0);
-  const [fadeIn, setFadeIn] = useState(false);
-  const waitingRef = useRef(false);
-
-  const back = 1 - front;
-  const frontPhoto = layers[front];
+  const [visible, setVisible] = useState(image);
+  const [incoming, setIncoming] = useState<GalleryBannerPhoto | null>(null);
+  const [fadeActive, setFadeActive] = useState(false);
+  const fadeTokenRef = useRef(0);
 
   useEffect(() => {
-    if (image.src === frontPhoto.src) return;
+    if (image.src === visible.src) return;
 
-    waitingRef.current = true;
-    setFadeIn(false);
-    setLayers((prev) => {
-      const next: [GalleryBannerPhoto, GalleryBannerPhoto] = [...prev];
-      next[back] = image;
-      return next;
+    fadeTokenRef.current += 1;
+    setFadeActive(false);
+    setIncoming(image);
+  }, [image, visible.src]);
+
+  const handleIncomingReady = useCallback(() => {
+    const token = fadeTokenRef.current;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (token !== fadeTokenRef.current) return;
+        setFadeActive(true);
+      });
     });
-  }, [image, frontPhoto.src, back]);
-
-  const handleBackReady = useCallback(() => {
-    if (!waitingRef.current) return;
-    waitingRef.current = false;
-    requestAnimationFrame(() => setFadeIn(true));
   }, []);
 
-  const handleTransitionEnd = useCallback(() => {
-    if (!fadeIn) return;
-    setFront(back);
-    setFadeIn(false);
-  }, [fadeIn, back]);
+  const handleTransitionEnd = useCallback(
+    (event: React.TransitionEvent<HTMLDivElement>) => {
+      if (event.propertyName !== "opacity" || !fadeActive || !incoming) return;
+      fadeTokenRef.current += 1;
+      setVisible(incoming);
+      setIncoming(null);
+      setFadeActive(false);
+    },
+    [fadeActive, incoming],
+  );
 
   return (
     <div className="mediakit-banner-slot relative h-full min-w-0 overflow-hidden bg-closet-blush/15">
       <div className="absolute inset-0">
-        <BannerImage photo={layers[front]} />
+        <BannerImage photo={visible} />
       </div>
-      <div
-        className={`mediakit-banner-layer absolute inset-0 transition-opacity ease-in-out ${
-          fadeIn ? "opacity-100" : "opacity-0"
-        }`}
-        style={{ transitionDuration: `${FADE_MS}ms` }}
-        onTransitionEnd={(event) => {
-          if (event.propertyName !== "opacity" || !fadeIn) return;
-          handleTransitionEnd();
-        }}
-      >
-        <BannerImage photo={layers[back]} onReady={handleBackReady} />
-      </div>
+      {incoming && (
+        <div
+          className={`mediakit-banner-layer absolute inset-0 ${
+            fadeActive ? "mediakit-banner-layer-fading opacity-100" : "opacity-0"
+          }`}
+          style={fadeActive ? { transitionDuration: `${FADE_MS}ms` } : undefined}
+          onTransitionEnd={handleTransitionEnd}
+        >
+          <BannerImage photo={incoming} onReady={handleIncomingReady} />
+        </div>
+      )}
     </div>
   );
 }
@@ -182,6 +231,11 @@ export default function MediaKitPhotoBanner({ photos }: { photos: GalleryBannerP
   const [slots, setSlots] = useState<GalleryBannerPhoto[]>(() => initialSlots(pool, SLOT_COUNT));
   const [reducedMotion, setReducedMotion] = useState(false);
   const slotCursor = useRef(0);
+  const poolRef = useRef(pool);
+
+  useEffect(() => {
+    poolRef.current = pool;
+  }, [pool]);
 
   useEffect(() => {
     setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -190,19 +244,34 @@ export default function MediaKitPhotoBanner({ photos }: { photos: GalleryBannerP
   useEffect(() => {
     if (reducedMotion || pool.length <= 1) return;
 
+    let cancelled = false;
+
     const timer = window.setInterval(() => {
       const slotToChange = slotCursor.current;
       slotCursor.current = (slotCursor.current + 1) % SLOT_COUNT;
 
       setSlots((prev) => {
-        const next = [...prev];
-        next[slotToChange] = pickReplacement(pool, prev, slotToChange);
-        return next;
+        const replacement = pickReplacement(poolRef.current, prev, slotToChange);
+        if (replacement.src === prev[slotToChange]?.src) return prev;
+
+        void preloadBannerPhoto(replacement).then(() => {
+          if (cancelled) return;
+          setSlots((current) => {
+            const next = [...current];
+            next[slotToChange] = replacement;
+            return next;
+          });
+        });
+
+        return prev;
       });
     }, SWAP_MS);
 
-    return () => window.clearInterval(timer);
-  }, [pool, reducedMotion]);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [pool.length, reducedMotion]);
 
   if (pool.length === 0) return null;
 
