@@ -674,18 +674,71 @@ export async function getPublishedGalleryPhotosForBanner(): Promise<GalleryBanne
 
 /** First published gallery photo URL for a cosplay — used when roster image is unset. */
 export async function getGalleryCoverPhotoForCosplay(cosplayId: string): Promise<string | null> {
+  const fallbacks = await getFallbackGalleryDisplayPhotosForCosplays([cosplayId]);
+  return fallbacks.get(cosplayId) ?? null;
+}
+
+function stablePickFromUrls(cosplayId: string, urls: string[]): string | null {
+  if (urls.length === 0) return null;
+  if (urls.length === 1) return urls[0]!;
+  let hash = 0;
+  for (let i = 0; i < cosplayId.length; i++) {
+    hash = (hash * 31 + cosplayId.charCodeAt(i)) >>> 0;
+  }
+  return urls[hash % urls.length]!;
+}
+
+/** Published cosplay photos for roster display when no featured image is set. */
+export async function getFallbackGalleryDisplayPhotosForCosplays(
+  cosplayIds: string[],
+): Promise<Map<string, string>> {
+  const uniqueIds = [...new Set(cosplayIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return new Map();
+
   await ensureDbIndexes();
   const collection = await getCollection<GalleryDoc>(COLLECTIONS.galleryItems);
-  const doc = await collection.findOne(
-    {
-      cosplayIds: cosplayId,
+  const docs = await collection
+    .find({
+      cosplayIds: { $in: uniqueIds },
       published: true,
       viewUrl: { $exists: true, $gt: "" },
-      $or: [{ imageType: { $exists: false } }, { imageType: null }, { imageType: "featured" }],
-    },
-    { sort: { sortOrder: 1, name: 1 } },
-  );
-  return doc ? fromDoc(doc).viewUrl : null;
+      imageType: { $ne: "reference" },
+    })
+    .sort({ sortOrder: 1, name: 1 })
+    .toArray();
+
+  const byCosplay = new Map<string, string[]>();
+  for (const doc of docs) {
+    const item = fromDoc(doc);
+    if (!isGalleryCosplayPhoto(item)) continue;
+    for (const cosplayId of item.cosplayIds) {
+      if (!uniqueIds.includes(cosplayId)) continue;
+      const list = byCosplay.get(cosplayId) ?? [];
+      if (!list.includes(item.viewUrl)) list.push(item.viewUrl);
+      byCosplay.set(cosplayId, list);
+    }
+  }
+
+  const result = new Map<string, string>();
+  for (const cosplayId of uniqueIds) {
+    const picked = stablePickFromUrls(cosplayId, byCosplay.get(cosplayId) ?? []);
+    if (picked) result.set(cosplayId, picked);
+  }
+  return result;
+}
+
+/** Fill unset roster display photos from linked gallery photos (stable pick per cosplay). */
+export async function enrichCosplaysWithGalleryDisplayPhotos(cosplays: Cosplay[]): Promise<Cosplay[]> {
+  const needsFallback = cosplays.filter((cosplay) => isCosplayPlaceholderImage(cosplay.image));
+  if (needsFallback.length === 0) return cosplays;
+
+  const fallbacks = await getFallbackGalleryDisplayPhotosForCosplays(needsFallback.map((c) => c.id));
+
+  return cosplays.map((cosplay) => {
+    if (!isCosplayPlaceholderImage(cosplay.image)) return cosplay;
+    const fallback = fallbacks.get(cosplay.id);
+    return fallback ? { ...cosplay, image: fallback } : cosplay;
+  });
 }
 
 /** Resolve photographer / convention credits for a cosplay's public gallery photos. */

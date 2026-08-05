@@ -18,7 +18,7 @@ import {
 } from "@/types/task";
 import { formatEventDate } from "@/data/calendar";
 import { getCosplayProgressPercent } from "@/lib/siteConfig";
-import { filterCosplayImages, getCosplayDisplayImage } from "@/lib/cosplay/images";
+import { filterCosplayImages, resolveCosplayDisplayPhoto } from "@/lib/cosplay/images";
 import { GalleryPhotoCreditMap } from "@/lib/gallery/photoCredits";
 import CosplayPhotoGallery from "@/components/CosplayPhotoGallery";
 import RosterImageSlot from "@/components/RosterImageSlot";
@@ -204,7 +204,7 @@ export default function CosplayBoard({
 
   const conventionPhotos = useMemo(() => filterCosplayImages(conventionPhotoUrls), [conventionPhotoUrls]);
 
-  const heroImage = getCosplayDisplayImage(cosplay.image, cosplay.characterArt);
+  const heroImage = resolveCosplayDisplayPhoto(cosplay, conventionPhotoUrls);
 
   const labelPhoto = (src: string, index: number) => galleryLabel(src, index, cosplay.parts);
 

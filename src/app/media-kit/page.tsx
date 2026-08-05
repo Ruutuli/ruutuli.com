@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
 import MediaKitView from "@/components/MediaKitView";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
-import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
 import { getCosplays } from "@/lib/store/cosplayStore";
 import {
-  getGalleryCoverPhotoForCosplay,
+  enrichCosplaysWithGalleryDisplayPhotos,
   getGalleryPhotoCreditsForCosplay,
   getPublishedGalleryPhotosForBanner,
 } from "@/lib/store/galleryStore";
@@ -13,7 +12,6 @@ import { getMediaKitSettings } from "@/lib/store/mediaKitStore";
 import { getMediaKitFeaturedCosplays } from "@/lib/mediaKit/utils";
 import { getSiteConfig } from "@/lib/server/siteConfig";
 import { GalleryPhotoCreditMap } from "@/lib/gallery/photoCredits";
-import { Cosplay } from "@/types/cosplay";
 
 export const dynamic = "force-dynamic";
 
@@ -30,35 +28,23 @@ async function buildPhotoCredits(cosplayIds: string[]): Promise<GalleryPhotoCred
   return Object.assign({}, ...maps);
 }
 
-async function enrichCosplaysWithGalleryPhotos(cosplays: Cosplay[]): Promise<Cosplay[]> {
-  return Promise.all(
-    cosplays.map(async (cosplay) => {
-      if (!isCosplayPlaceholderImage(cosplay.image)) return cosplay;
-      const cover = await getGalleryCoverPhotoForCosplay(cosplay.id);
-      if (!cover) return cosplay;
-      return { ...cosplay, image: cover };
-    }),
-  );
-}
-
 export default async function MediaKitPage() {
   const mediaKit = await getMediaKitSettings();
 
   const [cosplays, isAdmin, galleryPhotos] = await Promise.all([
-    getCosplays(),
+    enrichCosplaysWithGalleryDisplayPhotos(await getCosplays()),
     isAdminAuthenticated(),
     getPublishedGalleryPhotosForBanner(),
   ]);
 
-  const enrichedCosplays = await enrichCosplaysWithGalleryPhotos(cosplays);
-  const featured = getMediaKitFeaturedCosplays(enrichedCosplays);
+  const featured = getMediaKitFeaturedCosplays(cosplays);
   const photoCredits = await buildPhotoCredits(featured.map((c) => c.id));
 
   return (
     <SiteShell>
       <MediaKitView
         mediaKit={mediaKit}
-        cosplays={enrichedCosplays}
+        cosplays={cosplays}
         photoCredits={photoCredits}
         galleryPhotos={galleryPhotos}
         isAdmin={isAdmin}

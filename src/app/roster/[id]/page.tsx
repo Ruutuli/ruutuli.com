@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import SiteShell from "@/components/SiteShell";
 import CosplayBoard from "@/components/CosplayBoard";
 import { getCosplayById } from "@/lib/store/cosplayStore";
-import { getGalleryPhotoCreditsForCosplay, getGallerySectionPhotosForCosplay } from "@/lib/store/galleryStore";
+import {
+  enrichCosplaysWithGalleryDisplayPhotos,
+  getGalleryPhotoCreditsForCosplay,
+  getGallerySectionPhotosForCosplay,
+} from "@/lib/store/galleryStore";
 import { getTasks } from "@/lib/store/taskStore";
 import { getSiteConfig } from "@/lib/server/siteConfig";
 import { getTasksForCosplay } from "@/data/tasks";
@@ -36,13 +40,15 @@ export default async function CosplayBoardPage({ params }: PageProps) {
 
   if (!cosplay) notFound();
 
-  const tasks = getTasksForCosplay(allTasks, cosplay.id, cosplay.character);
+  const [enrichedCosplay] = await enrichCosplaysWithGalleryDisplayPhotos([cosplay]);
+
+  const tasks = getTasksForCosplay(allTasks, enrichedCosplay.id, enrichedCosplay.character);
 
   return (
     <SiteShell>
       <div className="closet-page !pt-4">
         <CosplayBoard
-          cosplay={cosplay}
+          cosplay={enrichedCosplay}
           tasks={tasks}
           photoCredits={photoCredits}
           buildPhotoUrls={buildPhotoUrls}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
 import RosterView from "@/components/RosterView";
 import { getCosplays } from "@/lib/store/cosplayStore";
+import { enrichCosplaysWithGalleryDisplayPhotos } from "@/lib/store/galleryStore";
 import { getSiteConfig } from "@/lib/server/siteConfig";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RosterPage() {
-  const cosplays = await getCosplays();
+  const cosplays = await enrichCosplaysWithGalleryDisplayPhotos(await getCosplays());
 
   return (
     <SiteShell>
