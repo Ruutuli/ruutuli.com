@@ -2,10 +2,15 @@ import "server-only";
 
 import {
   driveFileViewUrl,
-  getDriveFolderIdsFromEnv,
+  getGallerySyncFolderIdsFromEnv,
   GALLERY_MANUAL_LINK_FOLDER_ID,
 } from "@/lib/gallery/constants";
-import { getDriveFileMetadata, listImageFilesInFolder } from "@/lib/google-drive/galleryDrive";
+import {
+  getDriveFileMetadata,
+  listFoldersInFolderTree,
+  listImageFilesInFolder,
+} from "@/lib/google-drive/galleryDrive";
+import { logger } from "@/lib/logger";
 import { getGoogleDriveFileId } from "@/lib/utils/googleDriveImage";
 import { COLLECTIONS, ensureDbIndexes, getCollection } from "@/lib/mongodb/db";
 import { parseGalleryFilenameTags } from "@/lib/gallery/parseFilenameTags";
@@ -253,7 +258,7 @@ async function getGalleryStats(): Promise<GalleryListResult["stats"]> {
   return { ...base, excluded };
 }
 
-async function getGalleryFolderFacets(): Promise<{ id: string; name: string }[]> {
+async function getGalleryFolderFacetsFromDb(): Promise<{ id: string; name: string }[]> {
   const collection = await getCollection<GalleryDoc>(COLLECTIONS.galleryItems);
   const docs = await collection
     .aggregate<{ _id: string; name: string }>([
@@ -268,6 +273,32 @@ async function getGalleryFolderFacets(): Promise<{ id: string; name: string }[]>
     .toArray();
 
   return docs.map((doc) => ({ id: doc._id, name: doc.name }));
+}
+
+/** Live folder list from configured Drive root(s) — not stale MongoDB metadata. */
+async function getGalleryFolderFacets(): Promise<{ id: string; name: string }[]> {
+  const rootIds = getGallerySyncFolderIdsFromEnv();
+  if (rootIds.length === 0) {
+    return getGalleryFolderFacetsFromDb();
+  }
+
+  try {
+    const byId = new Map<string, string>();
+    for (const rootId of rootIds) {
+      const folders = await listFoldersInFolderTree(rootId);
+      for (const folder of folders) {
+        byId.set(folder.id, folder.name);
+      }
+    }
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  } catch (err) {
+    logger.warn("GalleryFolders", "Could not list Drive folders; using catalog metadata", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return getGalleryFolderFacetsFromDb();
+  }
 }
 
 export async function listGalleryItems(filters: GalleryListFilters = {}): Promise<GalleryListResult> {
@@ -445,7 +476,7 @@ export async function syncGalleryFromDrive(options?: {
   const folderIds =
     options?.folderIds?.length
       ? options.folderIds
-      : getDriveFolderIdsFromEnv();
+      : getGallerySyncFolderIdsFromEnv();
   if (folderIds.length === 0) {
     throw new Error("No Drive folders configured. Set GOOGLE_DRIVE_COSPLAY_FOLDER_ID in .env");
   }
@@ -459,6 +490,7 @@ export async function syncGalleryFromDrive(options?: {
   let synced = 0;
   let skipped = 0;
   const pendingWrites: GalleryItem[] = [];
+  const folderNames = new Map<string, string>();
 
   async function flushPendingWrites() {
     if (pendingWrites.length === 0) return;
@@ -473,6 +505,8 @@ export async function syncGalleryFromDrive(options?: {
   for (const folderId of folderIds) {
     const files = await listImageFilesInFolder(folderId);
     for (const file of files) {
+      folderNames.set(file.folderId, file.folderName);
+
       if (exclusions.has(file.id)) {
         skipped++;
         continue;
@@ -522,6 +556,17 @@ export async function syncGalleryFromDrive(options?: {
   }
 
   await flushPendingWrites();
+
+  const ts = nowIso();
+  const folderNameUpdates = [...folderNames.entries()].map(([folderId, folderName]) => ({
+    updateMany: {
+      filter: { folderId },
+      update: { $set: { folderName, updatedAt: ts } },
+    },
+  }));
+  if (folderNameUpdates.length > 0) {
+    await collection.bulkWrite(folderNameUpdates);
+  }
 
   return { synced, skipped, folderIds };
 }

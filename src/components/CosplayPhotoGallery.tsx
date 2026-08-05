@@ -8,7 +8,7 @@ import {
   photoCreditLines,
 } from "@/lib/gallery/photoCredits";
 
-type GalleryVariant = "standard" | "compact" | "featured";
+type GalleryVariant = "standard" | "compact" | "featured" | "build";
 
 function CreditOverlay({
   src,
@@ -257,9 +257,13 @@ export default function CosplayPhotoGallery({
   const gridClass =
     variant === "compact"
       ? "grid grid-cols-2 gap-3 sm:grid-cols-4"
+      : variant === "build"
+        ? "grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4"
       : variant === "featured"
         ? "grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:grid-rows-2 lg:gap-4"
         : "grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4";
+
+  const imageFitClass = variant === "build" ? "object-contain" : "object-cover";
 
   return (
     <>
@@ -275,22 +279,26 @@ export default function CosplayPhotoGallery({
               onClick={() => setLightboxIndex(i)}
               className={`group relative overflow-hidden rounded-2xl border border-closet-pink/50 bg-closet-blush/30 text-left shadow-closet transition duration-300 hover:-translate-y-0.5 hover:border-closet-rose/45 hover:shadow-closet-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-closet-rose/50 ${
                 isFeaturedLead ? "col-span-2 row-span-2 min-h-[280px] lg:min-h-0" : ""
-              } ${variant === "compact" ? "aspect-square rounded-xl" : isFeaturedLead ? "min-h-[220px] sm:min-h-[260px]" : "aspect-[3/4] sm:aspect-[4/5]"}`}
+              } ${variant === "compact" ? "aspect-square rounded-xl" : variant === "build" ? "aspect-[4/3] sm:aspect-[3/2]" : isFeaturedLead ? "min-h-[220px] sm:min-h-[260px]" : "aspect-[3/4] sm:aspect-[4/5]"}`}
             >
               <ProxiedNextImage
                 src={src}
                 alt={`${characterName} photo ${i + 1}`}
                 fill
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                className={`${imageFitClass} transition-transform duration-500 group-hover:scale-[1.02]`}
                 sizes={
                   isFeaturedLead
                     ? "(max-width: 1024px) 100vw, 50vw"
                     : variant === "compact"
                       ? "180px"
+                      : variant === "build"
+                        ? "(max-width: 640px) 50vw, 33vw"
                       : "(max-width: 640px) 50vw, 33vw"
                 }
               />
-              <CreditOverlay src={src} credits={photoCredits} fallback={fallback} compact={variant === "compact"} />
+              {variant !== "build" && (
+                <CreditOverlay src={src} credits={photoCredits} fallback={fallback} compact={variant === "compact"} />
+              )}
             </button>
           );
         })}

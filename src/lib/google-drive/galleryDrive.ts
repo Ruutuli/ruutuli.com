@@ -436,6 +436,72 @@ export async function listImageFilesInFolder(folderId: string): Promise<DriveIma
   return listImageFilesInFolderTreeWithClient(drive, folderId, rootName);
 }
 
+async function listSubfoldersWithClient(
+  drive: drive_v3.Drive,
+  folderId: string,
+): Promise<DriveFolderEntry[]> {
+  const folders: DriveFolderEntry[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const q = `'${folderId}' in parents and trashed = false and mimeType = '${GOOGLE_DRIVE_FOLDER_MIME}'`;
+    const apiRes = await drive.files.list({
+      q,
+      fields: "nextPageToken, files(id, name)",
+      pageSize: 1000,
+      pageToken,
+      orderBy: "name",
+      ...driveListSharedOpts,
+    });
+
+    for (const f of apiRes.data.files ?? []) {
+      if (f.id && typeof f.name === "string") {
+        folders.push({ id: f.id, name: f.name });
+      }
+    }
+
+    pageToken = apiRes.data.nextPageToken ?? undefined;
+  } while (pageToken);
+
+  return folders;
+}
+
+/** All folders under a root (including the root) — for live admin folder filters. */
+export async function listFoldersInFolderTree(folderId: string): Promise<DriveFolderEntry[]> {
+  const drive = await createGalleryDriveClient();
+  const trimmedId = folderId.trim();
+  let rootName = "(root folder)";
+  try {
+    const rootMeta = await drive.files.get({
+      fileId: trimmedId,
+      fields: "name",
+      supportsAllDrives: true,
+    });
+    if (rootMeta.data.name) rootName = rootMeta.data.name;
+  } catch {
+    /* keep fallback */
+  }
+
+  const folders: DriveFolderEntry[] = [{ id: trimmedId, name: rootName }];
+  const visited = new Set<string>();
+  const queue: DriveFolderEntry[] = [...folders];
+
+  while (queue.length > 0) {
+    const folder = queue.shift()!;
+    if (visited.has(folder.id)) continue;
+    visited.add(folder.id);
+
+    const subfolders = await listSubfoldersWithClient(drive, folder.id);
+    for (const sub of subfolders) {
+      folders.push(sub);
+      queue.push(sub);
+    }
+  }
+
+  folders.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  return folders;
+}
+
 export async function getDriveFileMetadata(
   fileId: string,
 ): Promise<{ id: string; name: string; mimeType: string | null } | null> {

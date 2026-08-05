@@ -19,7 +19,7 @@ import {
 import { formatEventDate } from "@/data/calendar";
 import { getCosplayProgressPercent } from "@/lib/siteConfig";
 import { filterCosplayImages, getCosplayDisplayImage } from "@/lib/cosplay/images";
-import { lookupPhotoCredit, GalleryPhotoCreditMap } from "@/lib/gallery/photoCredits";
+import { GalleryPhotoCreditMap } from "@/lib/gallery/photoCredits";
 import CosplayPhotoGallery from "@/components/CosplayPhotoGallery";
 import RosterImageSlot from "@/components/RosterImageSlot";
 
@@ -200,24 +200,9 @@ export default function CosplayBoard({
     })).filter((g) => g.items.length > 0);
   }, [cosplay.parts]);
 
-  const buildPhotos = useMemo(() => {
-    const tagged = filterCosplayImages(buildPhotoUrls);
-    if (tagged.length > 0) return tagged;
-    if (cosplay.gallery.length > 0) return filterCosplayImages(cosplay.gallery);
-    return filterCosplayImages([cosplay.image, cosplay.characterArt]);
-  }, [cosplay, buildPhotoUrls]);
+  const buildPhotos = useMemo(() => filterCosplayImages(buildPhotoUrls), [buildPhotoUrls]);
 
-  const conventionPhotos = useMemo(() => {
-    const tagged = filterCosplayImages(conventionPhotoUrls);
-    if (tagged.length > 0) return tagged;
-    const credited = buildPhotos.filter((url) => {
-      const credit = lookupPhotoCredit(url, photoCredits);
-      return credit?.convention || credit?.photographer;
-    });
-    if (credited.length > 0) return credited;
-    if (cosplay.convention) return buildPhotos;
-    return [];
-  }, [buildPhotos, conventionPhotoUrls, photoCredits, cosplay.convention]);
+  const conventionPhotos = useMemo(() => filterCosplayImages(conventionPhotoUrls), [conventionPhotoUrls]);
 
   const heroImage = getCosplayDisplayImage(cosplay.image, cosplay.characterArt);
 
@@ -657,8 +642,9 @@ export default function CosplayBoard({
               photos={buildPhotos}
               photoCredits={photoCredits}
               characterName={cosplay.character}
-              variant="featured"
+              variant="build"
               getFallbackLabel={labelPhoto}
+              emptyMessage="Tag photos as Build gallery in the admin to show progress shots here."
             />
           </div>
         </section>

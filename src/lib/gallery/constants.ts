@@ -77,3 +77,10 @@ export function getRootDriveFolderIdFromEnv(): string | null {
   const all = getDriveFolderIdsFromEnv();
   return all[0] ?? null;
 }
+
+/** Folder roots used for gallery sync and folder filters — cosplay folder only when set. */
+export function getGallerySyncFolderIdsFromEnv(): string[] {
+  const cosplay = getCosplayFolderIdsFromEnv();
+  if (cosplay.length) return cosplay;
+  return getDriveFolderIdsFromEnv();
+}
