@@ -4,12 +4,7 @@ import { formatCalendarEventDates, formatEventDate, getNextConvention } from "@/
 import { getCosplayProgressPercent, getSpotlightCosplay } from "@/lib/siteConfig";
 import { Cosplay } from "@/types/cosplay";
 import { ConEvent } from "@/types/event";
-import { getCosplayDisplayImage } from "@/lib/cosplay/images";
 import RosterImageSlot from "@/components/RosterImageSlot";
-
-function buildCover(cosplay: Cosplay): string | null {
-  return getCosplayDisplayImage(cosplay.characterArt, cosplay.image);
-}
 
 function SideCardIcon({ children }: { children: ReactNode }) {
   return (
@@ -38,7 +33,6 @@ export default function FeaturedProject({
   const nextCon = getNextConvention(events);
 
   const overall = cosplay ? getCosplayProgressPercent(cosplay) : 0;
-  const cover = cosplay ? buildCover(cosplay) : null;
   const showOutfit = cosplay?.outfit && cosplay.outfit.toLowerCase() !== "default";
   const artPosition = cosplay?.characterArtPosition ?? "center bottom";
 
@@ -89,9 +83,10 @@ export default function FeaturedProject({
 
           <div className="relative w-[34%] max-w-[200px] shrink-0 sm:max-w-[220px] lg:max-w-[240px]" aria-hidden>
             <RosterImageSlot
-              src={cover}
-              alt=""
+              src={cosplay.characterArt}
+              alt={`${cosplay.character} character art`}
               emptyLabel={cosplay.character}
+              emptyHint="No reference art"
               className="object-contain object-bottom transition-transform duration-700 group-hover:scale-[1.02]"
               objectPosition={artPosition}
               sizes="(max-width: 1024px) 34vw, 240px"
