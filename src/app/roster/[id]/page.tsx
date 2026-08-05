@@ -5,6 +5,7 @@ import CosplayBoard from "@/components/CosplayBoard";
 import { getCosplayById } from "@/lib/store/cosplayStore";
 import {
   enrichCosplaysWithGalleryDisplayPhotos,
+  getGalleryDisplayPhotoCandidatesForCosplay,
   getGalleryPhotoCreditsForCosplay,
   getGallerySectionPhotosForCosplay,
 } from "@/lib/store/galleryStore";
@@ -30,12 +31,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CosplayBoardPage({ params }: PageProps) {
   const { id } = await params;
-  const [cosplay, allTasks, photoCredits, buildPhotoUrls, conventionPhotoUrls] = await Promise.all([
+  const [cosplay, allTasks, photoCredits, buildPhotoUrls, conventionPhotoUrls, displayPhotoCandidates] =
+    await Promise.all([
     getCosplayById(id),
     getTasks(),
     getGalleryPhotoCreditsForCosplay(id),
     getGallerySectionPhotosForCosplay(id, "build"),
     getGallerySectionPhotosForCosplay(id, "convention"),
+    getGalleryDisplayPhotoCandidatesForCosplay(id),
   ]);
 
   if (!cosplay) notFound();
@@ -53,6 +56,7 @@ export default async function CosplayBoardPage({ params }: PageProps) {
           photoCredits={photoCredits}
           buildPhotoUrls={buildPhotoUrls}
           conventionPhotoUrls={conventionPhotoUrls}
+          displayPhotoCandidates={displayPhotoCandidates}
         />
       </div>
     </SiteShell>

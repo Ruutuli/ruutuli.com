@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
     length: body.length || "",
     character: body.character,
     color: body.color,
-    owner: body.owner || "Ruu",
   });
 
   return NextResponse.json(wig, { status: 201 });

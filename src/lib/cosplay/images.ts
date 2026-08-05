@@ -22,25 +22,42 @@ export function filterCosplayImages(urls: string[]): string[] {
   return urls.filter((u) => !isCosplayPlaceholderImage(u));
 }
 
-/** Stable pseudo-random pick — same cosplay keeps the same photo until a display photo is chosen. */
-export function pickStableCosplayPhoto(cosplayId: string, urls: (string | null | undefined)[]): string | null {
+/** Random pick from gallery fallbacks when no display photo is set. */
+export function pickRandomCosplayPhoto(urls: (string | null | undefined)[]): string | null {
   const valid = filterCosplayImages(urls.filter((u): u is string => !!u));
   if (valid.length === 0) return null;
-  if (valid.length === 1) return valid[0]!;
-  let hash = 0;
-  for (let i = 0; i < cosplayId.length; i++) {
-    hash = (hash * 31 + cosplayId.charCodeAt(i)) >>> 0;
-  }
-  return valid[hash % valid.length]!;
+  return valid[Math.floor(Math.random() * valid.length)]!;
 }
 
-/** Display / featured roster photo — set image, else a stable gallery pick, else character art. */
+/** Merge gallery candidates with section photos — cosplay shots only, never reference art. */
+export function buildCosplayPhotoFallbacks(
+  candidates: { cosplayPhotos: string[]; referencePhotos: string[] } | undefined,
+  sectionPhotoUrls: string[],
+): { cosplay: string[]; reference: string[] } {
+  const reference = candidates?.referencePhotos ?? [];
+  const referenceSet = new Set(reference);
+
+  let cosplay = candidates?.cosplayPhotos ?? [];
+  if (cosplay.length === 0) {
+    cosplay = filterCosplayImages(sectionPhotoUrls).filter((url) => !referenceSet.has(url));
+  }
+
+  return { cosplay, reference };
+}
+
+/** Display / featured roster photo — cosplay shots first, reference only if none exist. */
 export function resolveCosplayDisplayPhoto(
   cosplay: { id: string; image?: string | null; characterArt?: string | null },
-  galleryFallbacks: (string | null | undefined)[] = [],
+  cosplayPhotoFallbacks: (string | null | undefined)[] = [],
+  referencePhotoFallbacks: (string | null | undefined)[] = [],
 ): string | null {
   if (!isCosplayPlaceholderImage(cosplay.image)) return cosplay.image!.trim();
-  const fromGallery = pickStableCosplayPhoto(cosplay.id, galleryFallbacks);
-  if (fromGallery) return fromGallery;
+
+  const fromCosplayPhotos = pickRandomCosplayPhoto(cosplayPhotoFallbacks);
+  if (fromCosplayPhotos) return fromCosplayPhotos;
+
+  const fromReferencePhotos = pickRandomCosplayPhoto(referencePhotoFallbacks);
+  if (fromReferencePhotos) return fromReferencePhotos;
+
   return getCosplayDisplayImage(cosplay.characterArt);
 }

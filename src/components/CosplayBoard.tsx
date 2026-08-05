@@ -18,7 +18,11 @@ import {
 } from "@/types/task";
 import { formatEventDate } from "@/data/calendar";
 import { getCosplayProgressPercent } from "@/lib/siteConfig";
-import { filterCosplayImages, resolveCosplayDisplayPhoto } from "@/lib/cosplay/images";
+import {
+  buildCosplayPhotoFallbacks,
+  filterCosplayImages,
+  resolveCosplayDisplayPhoto,
+} from "@/lib/cosplay/images";
 import { GalleryPhotoCreditMap } from "@/lib/gallery/photoCredits";
 import CosplayPhotoGallery from "@/components/CosplayPhotoGallery";
 import RosterImageSlot from "@/components/RosterImageSlot";
@@ -169,12 +173,14 @@ export default function CosplayBoard({
   photoCredits = {},
   buildPhotoUrls = [],
   conventionPhotoUrls = [],
+  displayPhotoCandidates,
 }: {
   cosplay: Cosplay;
   tasks: BuildTask[];
   photoCredits?: GalleryPhotoCreditMap;
   buildPhotoUrls?: string[];
   conventionPhotoUrls?: string[];
+  displayPhotoCandidates?: { cosplayPhotos: string[]; referencePhotos: string[] };
 }) {
   const [tab, setTab] = useState<BoardTab>("overview");
 
@@ -204,7 +210,15 @@ export default function CosplayBoard({
 
   const conventionPhotos = useMemo(() => filterCosplayImages(conventionPhotoUrls), [conventionPhotoUrls]);
 
-  const heroImage = resolveCosplayDisplayPhoto(cosplay, conventionPhotoUrls);
+  const { cosplay: cosplayPhotoFallbacks, reference: referencePhotoFallbacks } = useMemo(
+    () => buildCosplayPhotoFallbacks(displayPhotoCandidates, [...conventionPhotoUrls, ...buildPhotoUrls]),
+    [displayPhotoCandidates, conventionPhotoUrls, buildPhotoUrls],
+  );
+
+  const heroImage = useMemo(
+    () => resolveCosplayDisplayPhoto(cosplay, cosplayPhotoFallbacks, referencePhotoFallbacks),
+    [cosplay, cosplayPhotoFallbacks, referencePhotoFallbacks],
+  );
 
   const labelPhoto = (src: string, index: number) => galleryLabel(src, index, cosplay.parts);
 

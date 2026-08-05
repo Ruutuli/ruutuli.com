@@ -5,8 +5,8 @@ import { COLLECTIONS, getCollection } from "@/lib/mongodb/db";
 import { seedStoreIfNeeded } from "./seed";
 import { slugifyId } from "./slug";
 
-function fromDoc(doc: Wig & { _id?: string }): Wig {
-  const { _id, ...rest } = doc;
+function fromDoc(doc: Wig & { _id?: string; owner?: string }): Wig {
+  const { _id, owner: _owner, ...rest } = doc;
   return rest;
 }
 
@@ -56,6 +56,7 @@ export async function updateWig(id: string, patch: Partial<Wig>): Promise<Wig | 
   if (!current) return null;
 
   const updated = { ...fromDoc(current), ...patch, id };
+  delete (updated as { owner?: string }).owner;
   await collection.replaceOne({ _id: id }, toDoc(updated));
   return updated;
 }

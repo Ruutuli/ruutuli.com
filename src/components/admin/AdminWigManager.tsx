@@ -1,34 +1,260 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Wig } from "@/types/wig";
+import {
+  getWigColorFamily,
+  resolveWigSwatch,
+  swatchNeedsBorderForName,
+  wigColorFamilyLabel,
+  wigSwatchBackground,
+} from "@/lib/wigColors";
+import { IconPlus } from "./icons";
 import {
   AdminButton,
   AdminCard,
   AdminEmptyState,
+  AdminField,
+  AdminModal,
   AdminPageHeader,
   AdminSearch,
+  AdminSelect,
+  AdminStatCard,
   AdminToast,
 } from "./ui";
+
+type SortKey = "brand" | "character" | "color" | "length" | "style";
+type ViewMode = "cards" | "table";
+
+const LENGTHS = ["Short", "Medium", "Long", "Pigtails"];
+
+const BRAND_RING: Record<string, string> = {
+  Arda: "ring-closet-rose/60",
+  "Arda Silky": "ring-closet-rose/50",
+  "Wig Is Fashion": "ring-violet-400/60",
+  Epic: "ring-sky-400/60",
+  Rolecos: "ring-emerald-400/60",
+  Uwowo: "ring-amber-400/60",
+};
+
+const SORT_LABELS: Record<SortKey, string> = {
+  brand: "Brand",
+  character: "Character",
+  color: "Color",
+  length: "Length",
+  style: "Style",
+};
+
+function emptyWig(): Partial<Wig> {
+  return { brand: "", style: "", length: "", character: "", color: "" };
+}
+
+function sortWigs(list: Wig[], key: SortKey, dir: "asc" | "desc"): Wig[] {
+  const mult = dir === "asc" ? 1 : -1;
+  return [...list].sort((a, b) => {
+    const av = (a[key] ?? "").toLowerCase();
+    const bv = (b[key] ?? "").toLowerCase();
+    return av.localeCompare(bv) * mult;
+  });
+}
+
+function WigColorSwatch({ color, size = "md" }: { color: string; size?: "sm" | "md" }) {
+  const dim = size === "sm" ? "h-3.5 w-3.5" : "h-5 w-5";
+  return (
+    <span
+      className={`inline-block shrink-0 rounded-full ring-1 ring-black/10 ${dim}`}
+      style={{
+        background: wigSwatchBackground(color),
+        boxShadow: swatchNeedsBorderForName(color) ? "inset 0 0 0 1px rgba(0,0,0,0.12)" : undefined,
+      }}
+      title={color}
+    />
+  );
+}
+
+function WigColorBadge({ color }: { color: string }) {
+  const family = getWigColorFamily(color);
+  const { from, to } = resolveWigSwatch(color);
+  const badgeBackground = to
+    ? `linear-gradient(135deg, ${from}28 0%, ${from}22 45%, ${to}38 100%)`
+    : `${from}22`;
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset"
+      style={{
+        background: badgeBackground,
+        color: family === "black" || family === "navy" ? "#1c1917" : "#5c4033",
+        ringColor: `${from}55`,
+      }}
+    >
+      <WigColorSwatch color={color} size="sm" />
+      {color}
+    </span>
+  );
+}
+
+function WigMobileRow({
+  wig,
+  onEdit,
+  onRemove,
+}: {
+  wig: Wig;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  const meta = [wig.character ? wig.brand : null, wig.length, wig.style].filter(Boolean).join(" · ");
+
+  return (
+    <li className="flex items-stretch gap-1 border-b border-closet-pink/35 last:border-b-0">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="admin-btn-touch flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left active:bg-closet-blush/40"
+      >
+        <span
+          className="w-1 shrink-0 self-stretch rounded-full"
+          style={{ background: wigSwatchBackground(wig.color) }}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-bold text-closet-brown">{wig.character || wig.brand}</p>
+          {meta ? <p className="mt-0.5 truncate text-xs text-closet-brown-light">{meta}</p> : null}
+          <p className="mt-1.5 inline-flex max-w-full items-center gap-1.5 text-xs font-semibold text-closet-brown">
+            <WigColorSwatch color={wig.color} size="sm" />
+            <span className="truncate">{wig.color}</span>
+          </p>
+        </div>
+      </button>
+      <div className="flex shrink-0 flex-col justify-center gap-1 border-l border-closet-pink/30 px-2 py-2">
+        <AdminButton variant="ghost" className="admin-btn-touch !min-h-[40px] !px-3 text-xs" onClick={onEdit}>
+          Edit
+        </AdminButton>
+        <AdminButton variant="danger" className="admin-btn-touch !min-h-[40px] !px-3 text-xs" onClick={onRemove}>
+          Remove
+        </AdminButton>
+      </div>
+    </li>
+  );
+}
 
 export default function AdminWigManager({ initial }: { initial: Wig[] }) {
   const [wigs, setWigs] = useState(initial);
   const [query, setQuery] = useState("");
+  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [lengthFilter, setLengthFilter] = useState<string>("all");
+  const [colorFilter, setColorFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SortKey>("brand");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [editing, setEditing] = useState<Partial<Wig> | null>(null);
   const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const brands = useMemo(() => Array.from(new Set(wigs.map((w) => w.brand))).sort(), [wigs]);
+  const colors = useMemo(() => Array.from(new Set(wigs.map((w) => w.color))).sort(), [wigs]);
+  const styles = useMemo(() => Array.from(new Set(wigs.map((w) => w.style).filter(Boolean))).sort(), [wigs]);
+  const colorFamilies = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const w of wigs) {
+      const f = getWigColorFamily(w.color);
+      counts.set(f, (counts.get(f) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [wigs]);
+
+  const topBrands = useMemo(
+    () =>
+      brands
+        .map((b) => ({ brand: b, count: wigs.filter((w) => w.brand === b).length }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8),
+    [brands, wigs],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return wigs;
-    return wigs.filter(
-      (w) =>
+    const matched = wigs.filter((w) => {
+      if (brandFilter !== "all" && w.brand !== brandFilter) return false;
+      if (lengthFilter !== "all" && w.length !== lengthFilter) return false;
+      if (colorFilter !== "all" && getWigColorFamily(w.color) !== colorFilter) return false;
+      if (!q) return true;
+      return (
         w.brand.toLowerCase().includes(q) ||
         (w.character ?? "").toLowerCase().includes(q) ||
         w.color.toLowerCase().includes(q) ||
-        w.style.toLowerCase().includes(q),
-    );
-  }, [wigs, query]);
+        w.style.toLowerCase().includes(q) ||
+        w.length.toLowerCase().includes(q)
+      );
+    });
+    return sortWigs(matched, sortBy, sortDir);
+  }, [wigs, query, brandFilter, lengthFilter, colorFilter, sortBy, sortDir]);
 
-  const brands = useMemo(() => new Set(wigs.map((w) => w.brand)).size, [wigs]);
+  const stats = useMemo(
+    () => ({
+      total: wigs.length,
+      brands: brands.length,
+      colors: colors.length,
+      withCharacter: wigs.filter((w) => w.character?.trim()).length,
+    }),
+    [wigs, brands, colors],
+  );
+
+  function toggleSort(key: SortKey) {
+    if (sortBy === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDir("asc");
+    }
+  }
+
+  async function saveWig(options?: { addAnother?: boolean }) {
+    if (!editing?.brand?.trim() || !editing.color?.trim()) {
+      setMessage("Brand and color are required");
+      return;
+    }
+    setSaving(true);
+
+    const payload = {
+      ...editing,
+      brand: editing.brand.trim(),
+      color: editing.color.trim(),
+      style: editing.style?.trim() ?? "",
+      length: editing.length?.trim() ?? "",
+      character: editing.character?.trim() || undefined,
+    };
+
+    const isNew = !editing.id;
+    const res = await fetch("/api/admin/wigs", {
+      method: isNew ? "POST" : "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    setSaving(false);
+    if (!res.ok) {
+      setMessage("Could not save wig");
+      return;
+    }
+
+    const saved = (await res.json()) as Wig;
+    setWigs((prev) => (isNew ? [...prev, saved] : prev.map((w) => (w.id === saved.id ? saved : w))));
+
+    if (options?.addAnother && isNew) {
+      setEditing(emptyWig());
+      setMessage("Wig added — add another");
+      return;
+    }
+
+    setEditing(null);
+    setMessage(isNew ? "Wig added" : "Wig updated");
+  }
+
+  function openAddWig() {
+    setEditing(emptyWig());
+  }
 
   async function remove(id: string) {
     if (!confirm("Delete this wig from inventory?")) return;
@@ -41,65 +267,607 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
     setMessage("Wig removed");
   }
 
+  const hasFilters = brandFilter !== "all" || lengthFilter !== "all" || colorFilter !== "all" || query.trim();
+
+  function clearFilters() {
+    setBrandFilter("all");
+    setLengthFilter("all");
+    setColorFilter("all");
+    setQuery("");
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-28 lg:space-y-6 lg:pb-0">
       <AdminPageHeader
-        title="Wigs"
-        description={`${wigs.length} wigs · ${brands} brands`}
+        title="Wig inventory"
+        description="Add, edit, or remove wigs while you stock."
+        action={
+          <div className="hidden flex-wrap items-center gap-2 sm:flex">
+            <Link
+              href="/api/admin/wigs/cards"
+              target="_blank"
+              className="admin-btn-secondary admin-btn-touch text-sm"
+            >
+              Print wig cards
+            </Link>
+            <AdminButton variant="primary" className="admin-btn-touch" onClick={openAddWig}>
+              <IconPlus />
+              Add wig
+            </AdminButton>
+          </div>
+        }
       />
 
-      <AdminSearch
-        value={query}
-        onChange={setQuery}
-        placeholder="Search brand, character, color, style…"
-        className="max-w-lg"
-      />
+      <div className="hidden gap-4 sm:grid sm:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard label="Total wigs" value={stats.total} accent="rose" />
+        <AdminStatCard label="Brands" value={stats.brands} accent="blush" />
+        <AdminStatCard label="Unique colors" value={stats.colors} accent="peach" />
+        <AdminStatCard label="Assigned to builds" value={stats.withCharacter} hint="Have a character name" accent="brown" />
+      </div>
+
+      <details className="hidden rounded-2xl border border-closet-pink/60 bg-white shadow-closet sm:block lg:hidden">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-bold text-closet-brown [&::-webkit-details-marker]:hidden">
+          Stats & print
+        </summary>
+        <div className="space-y-4 border-t border-closet-pink/40 px-4 py-4">
+          <div className="grid grid-cols-2 gap-3">
+            <AdminStatCard label="Total" value={stats.total} accent="rose" />
+            <AdminStatCard label="Brands" value={stats.brands} accent="blush" />
+          </div>
+          <Link href="/api/admin/wigs/cards" target="_blank" className="admin-btn-secondary admin-btn-touch w-full text-sm">
+            Print wig cards
+          </Link>
+        </div>
+      </details>
+
+      <AdminCard className="hidden p-4 sm:block sm:p-5 lg:block">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-closet-brown">Print by color</p>
+            <p className="mt-0.5 text-xs text-closet-brown-light">
+              3×5 in cards — up to 14 wigs per card, splits if more. Text shrinks to fit.
+            </p>
+          </div>
+          <Link href="/api/admin/wigs/cards" target="_blank" className="admin-btn-primary shrink-0 text-sm">
+            Print all
+          </Link>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {[
+            ["pink", "Pink"],
+            ["red", "Red"],
+            ["orange", "Orange"],
+            ["blonde", "Blonde"],
+            ["green", "Green / Teal"],
+            ["blue", "Blue"],
+            ["purple", "Purple"],
+            ["black", "Black"],
+            ["gray", "Gray / Silver"],
+            ["white", "White"],
+            ["brown", "Brown"],
+          ].map(([id, label]) => (
+            <Link
+              key={id}
+              href={`/api/admin/wigs/cards?category=${id}`}
+              target="_blank"
+              className="rounded-full bg-closet-blush/50 px-3 py-1 text-xs font-bold text-closet-brown ring-1 ring-closet-pink/50 hover:bg-closet-rose hover:text-white hover:ring-closet-rose"
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      </AdminCard>
+
+      <details className="rounded-2xl border border-closet-pink/60 bg-white shadow-closet lg:hidden">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-bold text-closet-brown [&::-webkit-details-marker]:hidden">
+          Print by color
+        </summary>
+        <div className="space-y-3 border-t border-closet-pink/40 px-4 py-4">
+          <Link href="/api/admin/wigs/cards" target="_blank" className="admin-btn-primary admin-btn-touch w-full text-sm">
+            Print all wig cards
+          </Link>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["pink", "Pink"],
+              ["red", "Red"],
+              ["orange", "Orange"],
+              ["blonde", "Blonde"],
+              ["green", "Green / Teal"],
+              ["blue", "Blue"],
+              ["purple", "Purple"],
+              ["black", "Black"],
+              ["gray", "Gray / Silver"],
+              ["white", "White"],
+              ["brown", "Brown"],
+            ].map(([id, label]) => (
+              <Link
+                key={id}
+                href={`/api/admin/wigs/cards?category=${id}`}
+                target="_blank"
+                className="admin-btn-touch rounded-full bg-closet-blush/50 px-3 py-2 text-xs font-bold text-closet-brown ring-1 ring-closet-pink/50"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </details>
+
+      {/* Mobile-first stock toolbar */}
+      <div className="sticky top-[7.5rem] z-20 -mx-1 space-y-3 rounded-2xl border border-closet-pink/50 bg-white/95 p-3 shadow-closet backdrop-blur-sm lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+        <AdminSearch
+          value={query}
+          onChange={setQuery}
+          placeholder="Search while stocking…"
+          className="w-full"
+        />
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortKey)}
+            className="admin-input admin-select admin-btn-touch min-w-0 flex-1 sm:min-w-[148px] sm:flex-none"
+            aria-label="Sort wigs by"
+          >
+            {Object.entries(SORT_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                Sort: {label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+            className="admin-btn-secondary admin-btn-touch shrink-0 !px-3"
+            title={sortDir === "asc" ? "Ascending" : "Descending"}
+          >
+            {sortDir === "asc" ? "↑" : "↓"}
+          </button>
+          <div className="hidden rounded-xl ring-1 ring-closet-pink/60 lg:flex">
+            {(["cards", "table"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                className={`admin-btn-touch px-3 py-2 text-xs font-bold capitalize first:rounded-l-xl last:rounded-r-xl ${
+                  viewMode === mode ? "bg-closet-rose text-white" : "bg-white text-closet-brown"
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {hasFilters && (
+          <div className="flex flex-wrap items-center gap-2">
+            {brandFilter !== "all" && (
+              <span className="rounded-full bg-closet-rose/15 px-3 py-1 text-xs font-bold text-closet-rose ring-1 ring-closet-rose/30">
+                {brandFilter}
+              </span>
+            )}
+            {colorFilter !== "all" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-closet-rose/15 px-3 py-1 text-xs font-bold text-closet-rose ring-1 ring-closet-rose/30">
+                <WigColorSwatch color={colorFilter === "other" ? "mixed" : colorFilter} size="sm" />
+                {wigColorFamilyLabel(colorFilter)}
+              </span>
+            )}
+            {lengthFilter !== "all" && (
+              <span className="rounded-full bg-closet-rose/15 px-3 py-1 text-xs font-bold text-closet-rose ring-1 ring-closet-rose/30">
+                {lengthFilter}
+              </span>
+            )}
+            <button type="button" onClick={clearFilters} className="admin-btn-touch text-xs font-bold text-closet-rose underline">
+              Clear
+            </button>
+          </div>
+        )}
+
+        <div className={`space-y-4 border-t border-closet-pink/30 pt-3 lg:hidden ${filtersOpen ? "block" : "hidden"}`}>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              onClick={() => setBrandFilter("all")}
+              className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${
+                brandFilter === "all" ? "bg-closet-rose text-white" : "bg-closet-blush/50 text-closet-brown"
+              }`}
+            >
+              All brands ({wigs.length})
+            </button>
+            {topBrands.map(({ brand, count }) => (
+              <button
+                key={brand}
+                type="button"
+                onClick={() => setBrandFilter(brandFilter === brand ? "all" : brand)}
+                className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${
+                  brandFilter === brand ? "bg-closet-rose text-white" : "bg-white ring-1 ring-closet-pink/50 text-closet-brown"
+                }`}
+              >
+                {brand} ({count})
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              onClick={() => setColorFilter("all")}
+              className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${
+                colorFilter === "all" ? "bg-closet-rose text-white" : "bg-closet-blush/50 text-closet-brown"
+              }`}
+            >
+              All colors
+            </button>
+            {colorFamilies.slice(0, 10).map(([family, count]) => (
+              <button
+                key={family}
+                type="button"
+                onClick={() => setColorFilter(colorFilter === family ? "all" : family)}
+                className={`admin-btn-touch inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold ring-1 ${
+                  colorFilter === family
+                    ? "bg-closet-rose text-white ring-closet-rose"
+                    : "bg-white text-closet-brown ring-closet-pink/50"
+                }`}
+              >
+                <WigColorSwatch color={family === "other" ? "mixed" : family} size="sm" />
+                {wigColorFamilyLabel(family)} ({count})
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {(["all", ...LENGTHS] as const).map((len) => (
+              <button
+                key={len}
+                type="button"
+                onClick={() => setLengthFilter(len)}
+                className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold capitalize ${
+                  lengthFilter === len ? "bg-closet-rose text-white" : "bg-closet-blush/50 text-closet-brown"
+                }`}
+              >
+                {len === "all" ? "All lengths" : len}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Filters — desktop only */}
+      <div className="hidden space-y-4 lg:block">
+        <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible lg:pb-0">
+          <button
+            type="button"
+            onClick={() => setBrandFilter("all")}
+            className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${
+              brandFilter === "all" ? "bg-closet-rose text-white" : "bg-closet-blush/50 text-closet-brown"
+            }`}
+          >
+            All brands ({wigs.length})
+          </button>
+          {topBrands.map(({ brand, count }) => (
+            <button
+              key={brand}
+              type="button"
+              onClick={() => setBrandFilter(brandFilter === brand ? "all" : brand)}
+              className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${
+                brandFilter === brand ? "bg-closet-rose text-white" : "bg-white ring-1 ring-closet-pink/50 text-closet-brown"
+              }`}
+            >
+              {brand} ({count})
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:items-center lg:overflow-visible lg:pb-0">
+          <span className="hidden shrink-0 text-xs font-bold uppercase tracking-wider text-closet-brown-light lg:inline">Color:</span>
+          <button
+            type="button"
+            onClick={() => setColorFilter("all")}
+            className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${
+              colorFilter === "all" ? "bg-closet-rose text-white" : "bg-closet-blush/50 text-closet-brown"
+            }`}
+          >
+            All colors
+          </button>
+          {colorFamilies.slice(0, 10).map(([family, count]) => (
+            <button
+              key={family}
+              type="button"
+              onClick={() => setColorFilter(colorFilter === family ? "all" : family)}
+              className={`admin-btn-touch inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold ring-1 ${
+                colorFilter === family
+                  ? "bg-closet-rose text-white ring-closet-rose"
+                  : "bg-white text-closet-brown ring-closet-pink/50"
+              }`}
+            >
+              <WigColorSwatch color={family === "other" ? "mixed" : family} size="sm" />
+              {wigColorFamilyLabel(family)} ({count})
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:items-center lg:overflow-visible lg:pb-0">
+          <span className="hidden shrink-0 text-xs font-bold uppercase tracking-wider text-closet-brown-light lg:inline">Length:</span>
+          {(["all", ...LENGTHS] as const).map((len) => (
+            <button
+              key={len}
+              type="button"
+              onClick={() => setLengthFilter(len)}
+              className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold capitalize ${
+                lengthFilter === len ? "bg-closet-rose text-white" : "bg-closet-blush/50 text-closet-brown"
+              }`}
+            >
+              {len === "all" ? "All lengths" : len}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <AdminCard>
         {filtered.length === 0 ? (
-          <AdminEmptyState title="No wigs found" description="Try a different search term." />
+          <AdminEmptyState
+            title={wigs.length === 0 ? "No wigs yet" : "No wigs match your filters"}
+            description={
+              wigs.length === 0
+                ? "Add your first wig to start tracking inventory."
+                : "Try clearing filters or a different search."
+            }
+          />
         ) : (
           <>
-            <div className="border-b border-closet-pink/50 px-5 py-3 text-xs font-semibold text-closet-brown-light">
+            <div className="border-b border-closet-pink/50 px-4 py-3 text-xs font-semibold text-closet-brown-light sm:px-5">
               Showing {filtered.length} of {wigs.length}
+              {sortBy !== "brand" || sortDir !== "asc" ? (
+                <span>
+                  {" "}
+                  · sorted by {SORT_LABELS[sortBy]} ({sortDir === "asc" ? "A→Z" : "Z→A"})
+                </span>
+              ) : null}
             </div>
-            <div className="max-h-[560px] overflow-auto">
-              <table className="w-full min-w-[680px] text-left text-sm">
-                <thead className="sticky top-0 z-10 bg-closet-blush/90 text-xs uppercase tracking-wide text-closet-brown-light backdrop-blur-sm">
-                  <tr>
-                    <th className="px-5 py-3.5 font-bold">Brand</th>
-                    <th className="px-4 py-3.5 font-bold">Character</th>
-                    <th className="px-4 py-3.5 font-bold">Color</th>
-                    <th className="px-4 py-3.5 font-bold">Style</th>
-                    <th className="px-4 py-3.5 font-bold">Length</th>
-                    <th className="px-5 py-3.5 text-right font-bold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((w) => (
-                    <tr key={w.id} className="admin-table-row">
-                      <td className="px-5 py-3.5 font-bold text-closet-brown">{w.brand}</td>
-                      <td className="px-4 py-3.5">{w.character || "—"}</td>
-                      <td className="px-4 py-3.5">
-                        <span className="inline-flex rounded-lg bg-closet-blush/50 px-2 py-0.5 text-xs font-semibold text-closet-brown">
-                          {w.color}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5 text-closet-brown-light">{w.style}</td>
-                      <td className="px-4 py-3.5 text-closet-brown-light">{w.length}</td>
-                      <td className="px-5 py-3.5 text-right">
-                        <AdminButton variant="danger" onClick={() => remove(w.id)}>
-                          Delete
-                        </AdminButton>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            <ul className="lg:hidden">
+              {filtered.map((w) => (
+                <WigMobileRow
+                  key={w.id}
+                  wig={w}
+                  onEdit={() => setEditing({ ...w })}
+                  onRemove={() => remove(w.id)}
+                />
+              ))}
+            </ul>
+
+            <div className="hidden lg:block">
+            {viewMode === "cards" ? (
+              <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-3">
+                {filtered.map((w) => {
+                  const swatchBg = wigSwatchBackground(w.color);
+                  const brandRing = BRAND_RING[w.brand] ?? "ring-closet-pink/40";
+                  return (
+                    <article
+                      key={w.id}
+                      className={`group relative overflow-hidden rounded-xl border border-closet-pink/50 bg-gradient-to-br from-white to-closet-blush/20 shadow-sm ${brandRing} ring-1`}
+                    >
+                      <div className="absolute inset-y-0 left-0 w-2 sm:w-1.5" style={{ background: swatchBg }} />
+                      <div className="p-4 pl-6 sm:pl-5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-closet-rose">{w.brand}</p>
+                            <p className="mt-0.5 font-sans text-base font-bold leading-snug text-closet-brown">
+                              {w.character || "Unassigned"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <WigColorBadge color={w.color} />
+                          {w.length && (
+                            <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-closet-brown ring-1 ring-closet-pink/40">
+                              {w.length}
+                            </span>
+                          )}
+                        </div>
+
+                        {w.style && (
+                          <p className="mt-2 text-xs leading-snug text-closet-brown-light">{w.style}</p>
+                        )}
+
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <AdminButton
+                            variant="secondary"
+                            className="admin-btn-touch w-full text-sm"
+                            onClick={() => setEditing({ ...w })}
+                          >
+                            Edit
+                          </AdminButton>
+                          <AdminButton
+                            variant="danger"
+                            className="admin-btn-touch w-full text-sm"
+                            onClick={() => remove(w.id)}
+                          >
+                            Remove
+                          </AdminButton>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="max-h-[min(70vh,640px)] overflow-y-auto">
+                  <table className="w-full min-w-[720px] text-left text-sm">
+                    <thead className="sticky top-0 z-10 bg-closet-blush/95 text-xs uppercase tracking-wide text-closet-brown-light backdrop-blur-sm">
+                      <tr>
+                        {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+                          <th key={key} className="px-3 py-3 font-bold first:pl-4 sm:px-4 sm:py-3.5 sm:first:pl-5">
+                            <button
+                              type="button"
+                              onClick={() => toggleSort(key)}
+                              className={`admin-btn-touch inline-flex min-h-[36px] items-center gap-1 hover:text-closet-rose ${
+                                sortBy === key ? "text-closet-rose" : ""
+                              }`}
+                            >
+                              {SORT_LABELS[key]}
+                              {sortBy === key && <span className="text-[10px]">{sortDir === "asc" ? "↑" : "↓"}</span>}
+                            </button>
+                          </th>
+                        ))}
+                        <th className="sticky right-0 z-20 bg-closet-blush/95 px-3 py-3 text-right font-bold sm:px-5 sm:py-3.5">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((w) => (
+                        <tr key={w.id} className="admin-table-row">
+                          <td className="px-3 py-3 sm:px-5 sm:py-3.5">
+                            <span className="font-bold text-closet-brown">{w.brand}</span>
+                          </td>
+                          <td className="px-3 py-3 sm:px-4 sm:py-3.5">{w.character || "—"}</td>
+                          <td className="px-3 py-3 sm:px-4 sm:py-3.5">
+                            <WigColorBadge color={w.color} />
+                          </td>
+                          <td className="px-3 py-3 text-closet-brown-light sm:px-4 sm:py-3.5">{w.length || "—"}</td>
+                          <td className="max-w-[140px] truncate px-3 py-3 text-closet-brown-light sm:max-w-none sm:px-4 sm:py-3.5">
+                            {w.style || "—"}
+                          </td>
+                          <td className="sticky right-0 bg-white/95 px-3 py-3 text-right backdrop-blur-sm sm:bg-transparent sm:px-5 sm:py-3.5 sm:backdrop-blur-none">
+                            <div className="flex justify-end gap-1">
+                              <AdminButton
+                                variant="ghost"
+                                className="admin-btn-touch text-xs"
+                                onClick={() => setEditing({ ...w })}
+                              >
+                                Edit
+                              </AdminButton>
+                              <AdminButton
+                                variant="danger"
+                                className="admin-btn-touch text-xs"
+                                onClick={() => remove(w.id)}
+                              >
+                                Remove
+                              </AdminButton>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
             </div>
           </>
         )}
       </AdminCard>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-closet-pink/60 bg-white/95 p-3 shadow-closet-lg backdrop-blur-sm lg:hidden">
+        <div className="mx-auto flex max-w-lg gap-2">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((open) => !open)}
+            className={`admin-btn-touch flex-1 rounded-xl px-4 py-3 text-sm font-bold ${
+              filtersOpen || hasFilters ? "bg-closet-blush text-closet-brown ring-1 ring-closet-rose/30" : "admin-btn-secondary"
+            }`}
+          >
+            Filters
+          </button>
+          <AdminButton variant="primary" className="admin-btn-touch flex-[2] !py-3 text-base" onClick={openAddWig}>
+            <IconPlus />
+            Add wig
+          </AdminButton>
+        </div>
+      </div>
+
+      {editing && (
+        <AdminModal
+          title={editing.id ? "Edit wig" : "Add wig"}
+          onClose={() => setEditing(null)}
+          footer={
+            <>
+              <AdminButton variant="secondary" className="admin-btn-touch" onClick={() => setEditing(null)}>
+                Cancel
+              </AdminButton>
+              {!editing.id && (
+                <AdminButton
+                  variant="secondary"
+                  className="admin-btn-touch sm:order-last"
+                  onClick={() => saveWig({ addAnother: true })}
+                  disabled={saving}
+                >
+                  {saving ? "Saving…" : "Save & add another"}
+                </AdminButton>
+              )}
+              <AdminButton variant="primary" className="admin-btn-touch" onClick={() => saveWig()} disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </AdminButton>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            {editing.color && (
+              <div className="flex items-center gap-3 rounded-xl border border-closet-pink/50 bg-closet-blush/20 px-4 py-3">
+                <WigColorSwatch color={editing.color} />
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-closet-brown-light">Preview</p>
+                  <p className="font-semibold text-closet-brown">{editing.color || "Enter a color"}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <AdminField
+                label="Brand"
+                value={editing.brand ?? ""}
+                onChange={(v) => setEditing({ ...editing, brand: v })}
+                list="wig-brands"
+                placeholder="Arda, Wig Is Fashion…"
+              />
+              <AdminField
+                label="Color"
+                value={editing.color ?? ""}
+                onChange={(v) => setEditing({ ...editing, color: v })}
+                list="wig-colors"
+                placeholder="Black, Blonde Sandy…"
+              />
+              <AdminField
+                label="Style"
+                value={editing.style ?? ""}
+                onChange={(v) => setEditing({ ...editing, style: v })}
+                list="wig-styles"
+                placeholder="Straight, Wavy…"
+              />
+              <AdminSelect
+                label="Length"
+                value={editing.length ?? ""}
+                onChange={(v) => setEditing({ ...editing, length: v })}
+                options={[{ value: "", label: "—" }, ...LENGTHS.map((l) => ({ value: l, label: l }))]}
+              />
+              <AdminField
+                label="Character (optional)"
+                value={editing.character ?? ""}
+                onChange={(v) => setEditing({ ...editing, character: v })}
+                placeholder="Kagome - Inuyasha"
+                className="sm:col-span-2"
+              />
+            </div>
+
+            <datalist id="wig-brands">
+              {brands.map((b) => (
+                <option key={b} value={b} />
+              ))}
+            </datalist>
+            <datalist id="wig-colors">
+              {colors.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+            <datalist id="wig-styles">
+              {styles.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          </div>
+        </AdminModal>
+      )}
 
       <AdminToast message={message} onDone={() => setMessage("")} />
     </div>

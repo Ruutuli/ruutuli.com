@@ -250,7 +250,7 @@ export function AdminToast({ message, onDone }: { message: string; onDone?: () =
   if (!message) return null;
 
   return (
-    <div className="admin-toast" role="status">
+    <div className="admin-toast left-4 right-4 sm:left-auto sm:right-6" role="status">
       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -301,8 +301,10 @@ export function AdminModal({
             <IconClose />
           </button>
         </div>
-        <div className={`${bodyClass} overflow-y-auto px-6 py-5`}>{children}</div>
-        <div className="flex justify-end gap-3 border-t border-closet-pink/50 px-6 py-4">{footer}</div>
+        <div className={`${bodyClass} overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5`}>{children}</div>
+        <div className="flex flex-col-reverse gap-2 border-t border-closet-pink/50 px-4 py-4 sm:flex-row sm:justify-end sm:gap-3 sm:px-6 [&_.admin-btn-primary]:min-h-[44px] [&_.admin-btn-secondary]:min-h-[44px] [&_.admin-btn-primary]:w-full sm:[&_.admin-btn-primary]:w-auto [&_.admin-btn-secondary]:w-full sm:[&_.admin-btn-secondary]:w-auto">
+          {footer}
+        </div>
       </div>
     </div>
   );

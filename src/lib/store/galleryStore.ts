@@ -678,14 +678,9 @@ export async function getGalleryCoverPhotoForCosplay(cosplayId: string): Promise
   return fallbacks.get(cosplayId) ?? null;
 }
 
-function stablePickFromUrls(cosplayId: string, urls: string[]): string | null {
+function randomPickFromUrls(urls: string[]): string | null {
   if (urls.length === 0) return null;
-  if (urls.length === 1) return urls[0]!;
-  let hash = 0;
-  for (let i = 0; i < cosplayId.length; i++) {
-    hash = (hash * 31 + cosplayId.charCodeAt(i)) >>> 0;
-  }
-  return urls[hash % urls.length]!;
+  return urls[Math.floor(Math.random() * urls.length)]!;
 }
 
 /** Published cosplay photos for roster display when no featured image is set. */
@@ -696,38 +691,95 @@ export async function getFallbackGalleryDisplayPhotosForCosplays(
   if (uniqueIds.length === 0) return new Map();
 
   await ensureDbIndexes();
-  const collection = await getCollection<GalleryDoc>(COLLECTIONS.galleryItems);
+  const [collection, cosplayList] = await Promise.all([
+    getCollection<GalleryDoc>(COLLECTIONS.galleryItems),
+    Promise.all(uniqueIds.map((id) => getCosplayById(id))),
+  ]);
+  const cosplayById = new Map(
+    cosplayList.filter((cosplay): cosplay is Cosplay => !!cosplay).map((cosplay) => [cosplay.id, cosplay]),
+  );
+
   const docs = await collection
     .find({
       cosplayIds: { $in: uniqueIds },
       published: true,
       viewUrl: { $exists: true, $gt: "" },
-      imageType: { $ne: "reference" },
     })
     .sort({ sortOrder: 1, name: 1 })
     .toArray();
 
-  const byCosplay = new Map<string, string[]>();
+  const cosplayPhotosById = new Map<string, string[]>();
+  const referencePhotosById = new Map<string, string[]>();
+
   for (const doc of docs) {
     const item = fromDoc(doc);
-    if (!isGalleryCosplayPhoto(item)) continue;
     for (const cosplayId of item.cosplayIds) {
       if (!uniqueIds.includes(cosplayId)) continue;
-      const list = byCosplay.get(cosplayId) ?? [];
+      const cosplay = cosplayById.get(cosplayId);
+      const isReference = isCharacterReferencePhoto(item, cosplay ? [cosplay] : []);
+      const bucket = isReference
+        ? referencePhotosById
+        : isGalleryCosplayPhoto(item)
+          ? cosplayPhotosById
+          : null;
+      if (!bucket) continue;
+      const list = bucket.get(cosplayId) ?? [];
       if (!list.includes(item.viewUrl)) list.push(item.viewUrl);
-      byCosplay.set(cosplayId, list);
+      bucket.set(cosplayId, list);
     }
   }
 
   const result = new Map<string, string>();
   for (const cosplayId of uniqueIds) {
-    const picked = stablePickFromUrls(cosplayId, byCosplay.get(cosplayId) ?? []);
+    const picked =
+      randomPickFromUrls(cosplayPhotosById.get(cosplayId) ?? []) ??
+      randomPickFromUrls(referencePhotosById.get(cosplayId) ?? []);
     if (picked) result.set(cosplayId, picked);
   }
   return result;
 }
 
-/** Fill unset roster display photos from linked gallery photos (stable pick per cosplay). */
+export async function getGalleryDisplayPhotoCandidatesForCosplay(cosplayId: string): Promise<{
+  cosplayPhotos: string[];
+  referencePhotos: string[];
+}> {
+  const cosplay = await getCosplayById(cosplayId);
+  await ensureDbIndexes();
+  const collection = await getCollection<GalleryDoc>(COLLECTIONS.galleryItems);
+  const docs = await collection
+    .find({
+      cosplayIds: cosplayId,
+      published: true,
+      viewUrl: { $exists: true, $gt: "" },
+    })
+    .sort({ sortOrder: 1, name: 1 })
+    .toArray();
+
+  const cosplayPhotos: string[] = [];
+  const referencePhotos: string[] = [];
+  const seenCosplay = new Set<string>();
+  const seenReference = new Set<string>();
+
+  for (const doc of docs) {
+    const item = fromDoc(doc);
+    const isReference = isCharacterReferencePhoto(item, cosplay ? [cosplay] : []);
+    const url = item.viewUrl;
+    if (isReference) {
+      if (seenReference.has(url)) continue;
+      seenReference.add(url);
+      referencePhotos.push(url);
+      continue;
+    }
+    if (!isGalleryCosplayPhoto(item)) continue;
+    if (seenCosplay.has(url)) continue;
+    seenCosplay.add(url);
+    cosplayPhotos.push(url);
+  }
+
+  return { cosplayPhotos, referencePhotos };
+}
+
+/** Fill unset roster display photos from linked gallery photos (random pick per page load). */
 export async function enrichCosplaysWithGalleryDisplayPhotos(cosplays: Cosplay[]): Promise<Cosplay[]> {
   const needsFallback = cosplays.filter((cosplay) => isCosplayPlaceholderImage(cosplay.image));
   if (needsFallback.length === 0) return cosplays;

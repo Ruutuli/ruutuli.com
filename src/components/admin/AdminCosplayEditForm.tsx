@@ -249,6 +249,13 @@ export default function AdminCosplayEditForm({
               <Link href={`/roster/${form.id}`} target="_blank" className="admin-btn-secondary text-sm">
                 View on site
               </Link>
+              <Link
+                href={`/api/admin/cosplays/pin-cards?id=${encodeURIComponent(form.id)}`}
+                target="_blank"
+                className="admin-btn-secondary text-sm"
+              >
+                Print pin card
+              </Link>
               <AdminButton variant="danger" onClick={remove}>
                 Delete
               </AdminButton>

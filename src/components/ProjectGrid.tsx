@@ -27,7 +27,7 @@ function CardAction({
 
 function RosterCard({ cosplay }: { cosplay: Cosplay }) {
   const progress = getCosplayProgressPercent(cosplay);
-  const imageSrc = getCosplayDisplayImage(cosplay.characterArt, cosplay.image);
+  const imageSrc = getCosplayDisplayImage(cosplay.image, cosplay.characterArt);
   const artPosition = cosplay.characterArtPosition ?? "center top";
   const boardHref = `/roster/${cosplay.id}`;
 

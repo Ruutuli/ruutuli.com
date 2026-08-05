@@ -1,13 +1,5 @@
 /** Imported from WIGS.csv — 114 wigs (all shared) */
-export interface Wig {
-  id: string;
-  brand: string;
-  style: string;
-  length: string;
-  character?: string;
-  color: string;
-  owner: string;
-}
+import type { Wig } from "@/types/wig";
 
 export const wigRecords: Wig[] = [
   {
@@ -17,7 +9,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Moon - Zelda",
     color: "Beige",
-        owner: "Ruu",
   },
   {
     id: "arda-amber-kagome-inuyasha-black-1",
@@ -26,7 +17,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Kagome - Inuyasha",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "arda-silky-nina-wig-black-2",
@@ -34,7 +24,6 @@ export const wigRecords: Wig[] = [
     style: "Nina",
     length: "Long",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "epic-aura-inosuke-demon-slayer-black-3",
@@ -43,7 +32,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Inosuke - Demon Slayer",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "hengfeng-straight-rin-inuyasha-black-4",
@@ -52,7 +40,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Rin - Inuyasha",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "lucaille-straight-pigtails-tamaki-fire-force-black-5",
@@ -61,7 +48,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Tamaki - Fire Force",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "mapofbeauty-straight-tifa-ff7-black-6",
@@ -70,7 +56,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Tifa - FF7",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "mapofbeauty-straight-yuffie-ff7-black-7",
@@ -79,7 +64,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Yuffie - FF7",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-homura-pmmm-black-8",
@@ -88,7 +72,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Homura - Pmmm",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "no-brand-spiked-kuro-haikyuu-black-9",
@@ -97,7 +80,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Kuro - Haikyuu",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-yura-inuyasha-black-10",
@@ -106,7 +88,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Yura - Inuyasha",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "no-brand-wavy-wig-black-11",
@@ -114,7 +95,6 @@ export const wigRecords: Wig[] = [
     style: "Wavy",
     length: "Short",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "uwowo-straight-ponytail-wwx-mdzs-black-12",
@@ -123,7 +103,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Wwx - Mdzs",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "uwowo-straight-ponytail-wwx-mdzs-black-13",
@@ -132,7 +111,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Wwx - Mdzs",
     color: "Black",
-        owner: "Ruu",
   },
   {
     id: "arda-marty-akira-devilman-crybaby-black-ash-14",
@@ -141,7 +119,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Akira - Devilman Crybaby",
     color: "Black ; Ash",
-        owner: "Ruu",
   },
   {
     id: "arda-magnum-noctis-ff15-black-ash-15",
@@ -150,7 +127,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Noctis - FF15",
     color: "Black ; Ash",
-        owner: "Ruu",
   },
   {
     id: "tefure-wavy-fashion-black-ashy-gradient-16",
@@ -159,7 +135,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Fashion",
     color: "Black ; Ashy Gradient",
-        owner: "Ruu",
   },
   {
     id: "tefure-wavy-fashion-black-gray-gradient-17",
@@ -168,7 +143,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Fashion",
     color: "Black ; Gray Gradient",
-        owner: "Ruu",
   },
   {
     id: "no-brand-wavy-fashion-black-teal-tips-18",
@@ -177,7 +151,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Fashion",
     color: "Black ; Teal Tips",
-        owner: "Ruu",
   },
   {
     id: "no-brand-lacefront-wig-black-teal-tips-19",
@@ -185,7 +158,6 @@ export const wigRecords: Wig[] = [
     style: "Lacefront",
     length: "Short",
     color: "Black ; Teal Tips",
-        owner: "Ruu",
   },
   {
     id: "magic-acgn-straight-wig-blonde-20",
@@ -193,7 +165,6 @@ export const wigRecords: Wig[] = [
     style: "Straight",
     length: "Long",
     color: "Blonde",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-ash-lynx-banana-fish-blonde-21",
@@ -202,7 +173,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Ash Lynx - Banana Fish",
     color: "Blonde",
-        owner: "Ruu",
   },
   {
     id: "no-brand-wavy-tuesday-carole-and-tuesday-blonde-22",
@@ -211,7 +181,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Tuesday - Carole And Tuesday",
     color: "Blonde",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-uranus-sailor-moon-blonde-23",
@@ -220,7 +189,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Uranus - Sailor Moon",
     color: "Blonde",
-        owner: "Ruu",
   },
   {
     id: "no-brand-buns-violet-violet-evergarden-blonde-24",
@@ -229,7 +197,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Violet - Violet Evergarden",
     color: "Blonde",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-zelda-breath-of-the-wild-blonde-25",
@@ -238,7 +205,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Zelda - Breath of the Wild",
     color: "Blonde",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-kenma-haikyuu-blonde-black-roots-gradient-26",
@@ -247,7 +213,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Kenma - Haikyuu",
     color: "Blonde ; Black Roots Gradient",
-        owner: "Ruu",
   },
   {
     id: "no-brand-wavy-lacefront-ruler-kenma-haikyuu-blonde-black-roots-gradient-27",
@@ -256,7 +221,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Ruler Kenma - Haikyuu",
     color: "Blonde ; Black Roots Gradient",
-        owner: "Ruu",
   },
   {
     id: "arda-jaguar-prompto-ff15-blonde-champange-28",
@@ -265,7 +229,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Prompto - FF15",
     color: "Blonde ; Champange",
-        owner: "Ruu",
   },
   {
     id: "arda-chibi-23-toga-boku-no-hero-blonde-champange-29",
@@ -274,7 +237,6 @@ export const wigRecords: Wig[] = [
     length: "Pigtails",
     character: "Toga - Boku No Hero",
     color: "Blonde ; Champange",
-        owner: "Ruu",
   },
   {
     id: "arda-jane-wig-blonde-dark-ash-30",
@@ -282,7 +244,6 @@ export const wigRecords: Wig[] = [
     style: "Jane",
     length: "Short",
     color: "Blonde ; Dark Ash",
-        owner: "Ruu",
   },
   {
     id: "arda-jasmine-tetra-zelda-blonde-fairy-31",
@@ -291,7 +252,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Tetra - Zelda",
     color: "Blonde ; Fairy",
-        owner: "Ruu",
   },
   {
     id: "arda-straight-ponytail-nowi-fire-emblem-blonde-green-tips-32",
@@ -300,7 +260,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Nowi - Fire Emblem",
     color: "Blonde ; Green Tips",
-        owner: "Ruu",
   },
   {
     id: "arda-jareth-deidara-naruto-blonde-light-33",
@@ -309,7 +268,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Deidara - Naruto",
     color: "Blonde ; Light",
-        owner: "Ruu",
   },
   {
     id: "arda-jaguar-linkle-zelda-blonde-light-34",
@@ -318,7 +276,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Linkle - Zelda",
     color: "Blonde ; Light",
-        owner: "Ruu",
   },
   {
     id: "arda-jaguar-naruko-naruto-bowsette-mario-blonde-light-35",
@@ -327,7 +284,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Naruko - Naruto / Bowsette - Mario",
     color: "Blonde ; Light",
-        owner: "Ruu",
   },
   {
     id: "arda-pony-tail-clip-naruko-naruto-bowsette-mario-blonde-light-36",
@@ -336,7 +292,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Naruko - Naruto / Bowsette - Mario",
     color: "Blonde ; Light",
-        owner: "Ruu",
   },
   {
     id: "epic-selene-brother-one-drakengard-blonde-natural-37",
@@ -345,7 +300,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Brother One - Drakengard",
     color: "Blonde ; Natural",
-        owner: "Ruu",
   },
   {
     id: "epic-theia-brother-one-drakengard-blonde-natural-38",
@@ -354,7 +308,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Brother One - Drakengard",
     color: "Blonde ; Natural",
-        owner: "Ruu",
   },
   {
     id: "rolecos-straight-rengoku-demon-slayer-blonde-red-rips-39",
@@ -363,7 +316,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Rengoku - Demon Slayer",
     color: "Blonde ; Red Rips",
-        owner: "Ruu",
   },
   {
     id: "aiyaya-wavy-wig-blonde-sandy-40",
@@ -371,7 +323,6 @@ export const wigRecords: Wig[] = [
     style: "Wavy",
     length: "Short",
     color: "Blonde ; Sandy",
-        owner: "Ruu",
   },
   {
     id: "no-brand-wavy-pigtail-ann-persona-5-blonde-sandy-41",
@@ -380,7 +331,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Ann - Persona 5",
     color: "Blonde ; Sandy",
-        owner: "Ruu",
   },
   {
     id: "no-brand-wavy-lacefront-mireille-noir-blonde-sandy-42",
@@ -389,7 +339,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Mireille - Noir",
     color: "Blonde ; Sandy",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-zhan-zheng-xi-19-days-blonde-sandy-43",
@@ -398,7 +347,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Zhan Zheng Xi - 19 Days",
     color: "Blonde ; Sandy",
-        owner: "Ruu",
   },
   {
     id: "no-brand-wavy-lacefront-wig-blonde-sandy-44",
@@ -406,7 +354,6 @@ export const wigRecords: Wig[] = [
     style: "Wavy ; Lacefront",
     length: "Medium",
     color: "Blonde ; Sandy",
-        owner: "Ruu",
   },
   {
     id: "arda-katinka-lio-promare-blonde-titanium-45",
@@ -415,7 +362,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Lio - Promare",
     color: "Blonde ; Titanium",
-        owner: "Ruu",
   },
   {
     id: "arda-jareth-short-puma-dominion-tank-police-blonde-titanium-46",
@@ -424,7 +370,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Puma - Dominion Tank Police",
     color: "Blonde ; Titanium",
-        owner: "Ruu",
   },
   {
     id: "arda-luthien-luna-ff15-blonde-ash-47",
@@ -433,7 +378,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Luna - FF15",
     color: "Blonde; Ash",
-        owner: "Ruu",
   },
   {
     id: "arda-skyelar-anna-shaman-king-blonde-pale-48",
@@ -442,7 +386,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Anna - Shaman King",
     color: "Blonde; Pale",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-slaine-aldnoah-zero-blonde-pale-49",
@@ -451,7 +394,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Slaine - Aldnoah Zero",
     color: "Blonde; Pale",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-ponytail-lacefront-bulma-dragon-ball-blue-50",
@@ -460,7 +402,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Bulma - Dragon Ball",
     color: "Blue",
-        owner: "Ruu",
   },
   {
     id: "kasou-straight-ryuko-kill-la-kill-blue-dark-red-streak-51",
@@ -469,7 +410,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Ryuko - Kill La Kill",
     color: "Blue ; Dark ; Red Streak",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-ciel-black-butler-blue-dark-slate-52",
@@ -478,7 +418,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Ciel - Black Butler",
     color: "Blue ; Dark Slate",
-        owner: "Ruu",
   },
   {
     id: "arda-magnum-long-aqua-kingdom-hearts-blue-demin-53",
@@ -487,7 +426,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Aqua - Kingdom Hearts",
     color: "Blue ; Demin",
-        owner: "Ruu",
   },
   {
     id: "arda-derek-kyogre-pokemon-blue-indigo-54",
@@ -496,7 +434,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Kyogre - Pokemon",
     color: "Blue ; Indigo",
-        owner: "Ruu",
   },
   {
     id: "angol-straight-aqua-konosuba-blue-light-55",
@@ -505,7 +442,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Aqua - Konosuba",
     color: "Blue ; Light",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-rei-nge-blue-light-56",
@@ -514,7 +450,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Rei - NGE",
     color: "Blue ; Light",
-        owner: "Ruu",
   },
   {
     id: "arda-derek-poliwrath-pokemon-blue-royal-57",
@@ -523,7 +458,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Poliwrath - Pokemon",
     color: "Blue ; Royal",
-        owner: "Ruu",
   },
   {
     id: "aliexpress-straight-wig-brown-58",
@@ -531,7 +465,6 @@ export const wigRecords: Wig[] = [
     style: "Straight",
     length: "Short",
     color: "Brown",
-        owner: "Ruu",
   },
   {
     id: "arda-caine-classic-victor-arcane-brown-59",
@@ -540,7 +473,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Victor - Arcane",
     color: "Brown",
-        owner: "Ruu",
   },
   {
     id: "flovex-straight-wig-brown-60",
@@ -548,7 +480,6 @@ export const wigRecords: Wig[] = [
     style: "Straight",
     length: "Short",
     color: "Brown",
-        owner: "Ruu",
   },
   {
     id: "tlsd-curly-ponytail-aerith-ff7-brown-61",
@@ -557,7 +488,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Aerith - FF7",
     color: "Brown",
-        owner: "Ruu",
   },
   {
     id: "tefure-wavy-fashion-brown-pink-gradient-62",
@@ -566,7 +496,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Fashion",
     color: "Brown ; Pink Gradient",
-        owner: "Ruu",
   },
   {
     id: "tefure-wavy-fashion-brown-pink-gradient-63",
@@ -575,7 +504,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Fashion",
     color: "Brown ; Pink Gradient",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-chie-persona-4-brown-warm-64",
@@ -584,7 +512,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Chie - Persona 4",
     color: "Brown ; Warm",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-mako-kill-la-kill-brown-warm-65",
@@ -593,7 +520,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Mako - Kill La Kill",
     color: "Brown ; Warm",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-wig-brown-warm-66",
@@ -601,7 +527,6 @@ export const wigRecords: Wig[] = [
     style: "Straight",
     length: "Short",
     color: "Brown ; Warm",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-fox-girl-original-brown-warm-sandy-67",
@@ -610,7 +535,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Fox Girl - Original",
     color: "Brown ; Warm Sandy",
-        owner: "Ruu",
   },
   {
     id: "arda-rocky-overhaul-boku-no-hero-brown-dark-68",
@@ -619,7 +543,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Overhaul - Boku No Hero",
     color: "Brown; Dark",
-        owner: "Ruu",
   },
   {
     id: "arda-jaguar-tracer-overwatch-brown-dark-69",
@@ -628,7 +551,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Tracer - Overwatch",
     color: "Brown; Dark",
-        owner: "Ruu",
   },
   {
     id: "mapofbeauty-straight-megumin-konosuba-brown-dark-70",
@@ -637,7 +559,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Megumin - Konosuba",
     color: "Brown; Dark",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-ponytail-claire-resident-evil-brown-dark-71",
@@ -646,7 +567,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Claire - Resident Evil",
     color: "Brown; Dark",
-        owner: "Ruu",
   },
   {
     id: "aliexpress-straight-olivine-nu-carnival-green-72",
@@ -655,7 +575,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Olivine - Nu:Carnival",
     color: "Green",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-kaworu-nge-grey-73",
@@ -664,7 +583,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Kaworu - NGE",
     color: "Grey",
-        owner: "Ruu",
   },
   {
     id: "wig-is-fashion-straight-ashe-fire-emblem-grey-74",
@@ -673,7 +591,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Ashe - Fire Emblem",
     color: "Grey",
-        owner: "Ruu",
   },
   {
     id: "epic-nyx-asuka-nge-orange-autumn-75",
@@ -682,7 +599,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Asuka - NGE",
     color: "Orange ; Autumn",
-        owner: "Ruu",
   },
   {
     id: "angol-straight-yuno-mirai-nikki-pink-76",
@@ -691,7 +607,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Yuno - Mirai Nikki",
     color: "Pink",
-        owner: "Ruu",
   },
   {
     id: "no-brand-wavy-sakura-naruto-pink-77",
@@ -700,7 +615,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Sakura - Naruto",
     color: "Pink",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-wig-pink-78",
@@ -708,7 +622,6 @@ export const wigRecords: Wig[] = [
     style: "Straight",
     length: "Short",
     color: "Pink",
-        owner: "Ruu",
   },
   {
     id: "mapofbeauty-wavy-fashion-pink-dark-brown-split-79",
@@ -717,7 +630,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Fashion",
     color: "Pink ; Dark Brown Split",
-        owner: "Ruu",
   },
   {
     id: "no-brand-curly-lightning-ff13-pink-dusty-80",
@@ -726,7 +638,6 @@ export const wigRecords: Wig[] = [
     length: "Meduim",
     character: "Lightning - FF13",
     color: "Pink ; Dusty",
-        owner: "Ruu",
   },
   {
     id: "rolecos-braided-mitsuri-demon-slayer-pink-green-gradient-81",
@@ -735,7 +646,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Mitsuri - Demon Slayer",
     color: "Pink ; Green Gradient",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-power-chainsaw-man-pink-peach-82",
@@ -744,7 +654,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Power - Chainsaw Man",
     color: "Pink ; Peach",
-        owner: "Ruu",
   },
   {
     id: "arda-ferrari-angel-devil-chainsaw-man-pink-salmon-83",
@@ -753,7 +662,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Angel Devil - Chainsaw Man",
     color: "Pink ; Salmon",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-middle-split-hilda-zelda-purple-84",
@@ -762,7 +670,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Hilda - Zelda",
     color: "Purple",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-wig-purple-85",
@@ -770,7 +677,6 @@ export const wigRecords: Wig[] = [
     style: "Straight",
     length: "Medium",
     color: "Purple",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-wig-purple-86",
@@ -778,7 +684,6 @@ export const wigRecords: Wig[] = [
     style: "Straight",
     length: "Medium",
     color: "Purple",
-        owner: "Ruu",
   },
   {
     id: "arda-jaguar-poe-zelda-purple-dark-87",
@@ -787,7 +692,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Poe - Zelda",
     color: "Purple ; Dark",
-        owner: "Ruu",
   },
   {
     id: "xinwang-straight-pigtails-tharja-fire-emblem-purple-dark-88",
@@ -796,7 +700,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Tharja - Fire Emblem",
     color: "Purple ; Dark",
-        owner: "Ruu",
   },
   {
     id: "xinwang-straight-pigtails-wig-purple-dark-89",
@@ -804,7 +707,6 @@ export const wigRecords: Wig[] = [
     style: "Straight ; Pigtails",
     length: "Long",
     color: "Purple ; Dark",
-        owner: "Ruu",
   },
   {
     id: "arda-jaguar-majora-zelda-purple-grape-90",
@@ -813,7 +715,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Majora - Zelda",
     color: "Purple ; Grape",
-        owner: "Ruu",
   },
   {
     id: "arda-straight-yuri-fire-emblem-purple-lilac-91",
@@ -822,7 +723,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Yuri - Fire Emblem",
     color: "Purple ; Lilac",
-        owner: "Ruu",
   },
   {
     id: "wig-is-fashion-wavy-lacefront-titania-fire-emblem-red-92",
@@ -831,7 +731,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Titania - Fire Emblem",
     color: "Red",
-        owner: "Ruu",
   },
   {
     id: "epic-hera-android-21-dbz-red-copper-93",
@@ -840,7 +739,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Android 21 - DBZ",
     color: "Red ; Copper",
-        owner: "Ruu",
   },
   {
     id: "arda-jaguar-groudon-pokemon-red-crimson-94",
@@ -849,7 +747,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Groudon - Pokemon",
     color: "Red ; Crimson",
-        owner: "Ruu",
   },
   {
     id: "arda-chibi-ayame-inuyasha-red-dark-copper-95",
@@ -858,7 +755,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Ayame - Inuyasha",
     color: "Red ; Dark Copper",
-        owner: "Ruu",
   },
   {
     id: "arda-eowyn-freyjador-suikoden-silver-96",
@@ -867,7 +763,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Freyjador - Suikoden",
     color: "Silver",
-        owner: "Ruu",
   },
   {
     id: "arda-venus-inuyasha-inuyasha-silver-97",
@@ -876,7 +771,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Inuyasha - Inuyasha",
     color: "Silver",
-        owner: "Ruu",
   },
   {
     id: "lucaile-straight-akene-naruto-oc-silver-98",
@@ -885,7 +779,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Akene - Naruto OC",
     color: "Silver",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-2b-nier-automata-silver-99",
@@ -894,7 +787,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "2B - Nier Automata",
     color: "Silver",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-wig-silver-100",
@@ -902,7 +794,6 @@ export const wigRecords: Wig[] = [
     style: "Straight",
     length: "Short",
     color: "Silver",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-bulma-dbz-teal-101",
@@ -911,7 +802,6 @@ export const wigRecords: Wig[] = [
     length: "Medium",
     character: "Bulma - DBZ",
     color: "Teal",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-sailor-pluto-sailor-moon-teal-dark-102",
@@ -920,7 +810,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Sailor Pluto - Sailor Moon",
     color: "Teal ; Dark",
-        owner: "Ruu",
   },
   {
     id: "angol-straight-freyjador-suikoden-white-103",
@@ -929,7 +818,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Freyjador - Suikoden",
     color: "White",
-        owner: "Ruu",
   },
   {
     id: "arda-magnum-rex-i-was-a-teenage-exocolonist-white-104",
@@ -938,7 +826,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Rex - I Was A Teenage Exocolonist",
     color: "White",
-        owner: "Ruu",
   },
   {
     id: "epic-aether-abel-star-fighter-white-105",
@@ -947,7 +834,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Abel - Star Fighter",
     color: "White",
-        owner: "Ruu",
   },
   {
     id: "epic-scylla-impa-zelda-white-106",
@@ -956,7 +842,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Impa - Zelda",
     color: "White",
-        owner: "Ruu",
   },
   {
     id: "epic-theia-zero-drakenguard-3-white-107",
@@ -965,7 +850,6 @@ export const wigRecords: Wig[] = [
     length: "Meduim",
     character: "Zero - Drakenguard 3",
     color: "White",
-        owner: "Ruu",
   },
   {
     id: "epic-theia-wig-white-108",
@@ -973,7 +857,6 @@ export const wigRecords: Wig[] = [
     style: "Theia",
     length: "Meduim",
     color: "White",
-        owner: "Ruu",
   },
   {
     id: "meiya-straight-wig-white-109",
@@ -981,7 +864,6 @@ export const wigRecords: Wig[] = [
     style: "Straight",
     length: "Short",
     color: "White",
-        owner: "Ruu",
   },
   {
     id: "no-brand-straight-9s-nier-automata-white-110",
@@ -990,7 +872,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "9S - Nier Automata",
     color: "White",
-        owner: "Ruu",
   },
   {
     id: "arda-wavy-alolan-ninetales-pokemon-white-blue-tips-111",
@@ -999,7 +880,6 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Alolan Ninetales - Pokemon",
     color: "White ;  Blue Tips",
-        owner: "Ruu",
   },
   {
     id: "lucaille-wavy-shiro-ngnl-white-multi-streaks-112",
@@ -1008,7 +888,6 @@ export const wigRecords: Wig[] = [
     length: "Long",
     character: "Shiro - NGNL",
     color: "White ; Multi Streaks",
-        owner: "Ruu",
   },
   {
     id: "monenjoy-straight-diamond-houseki-no-kuni-white-prism-streaks-113",
@@ -1017,6 +896,5 @@ export const wigRecords: Wig[] = [
     length: "Short",
     character: "Diamond - Houseki No Kuni",
     color: "White ; Prism Streaks",
-        owner: "Ruu",
   },
 ];

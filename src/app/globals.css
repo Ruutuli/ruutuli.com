@@ -262,7 +262,7 @@
   }
 
   .admin-input {
-    @apply rounded-xl border border-closet-pink/70 bg-white px-4 py-2.5 text-sm text-closet-brown shadow-sm transition-colors placeholder:text-closet-brown-light/60 focus:border-closet-rose/50 focus:outline-none focus:ring-2 focus:ring-closet-rose/20;
+    @apply rounded-xl border border-closet-pink/70 bg-white px-4 py-3 text-base text-closet-brown shadow-sm transition-colors placeholder:text-closet-brown-light/60 focus:border-closet-rose/50 focus:outline-none focus:ring-2 focus:ring-closet-rose/20 sm:py-2.5 sm:text-sm;
   }
 
   /* Custom chevron — native select arrows sit too far right with admin-input padding */
@@ -322,15 +322,19 @@
   }
 
   .admin-modal-backdrop {
-    @apply fixed inset-0 z-50 flex items-end justify-center bg-closet-brown/45 p-4 backdrop-blur-sm sm:items-center;
+    @apply fixed inset-0 z-50 flex items-end justify-center bg-closet-brown/45 p-0 backdrop-blur-sm sm:items-center sm:p-4;
   }
 
   .admin-modal {
-    @apply flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-closet-pink/70 bg-closet-surface shadow-closet-lg;
+    @apply flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-closet-pink/70 bg-closet-surface shadow-closet-lg sm:max-h-[92vh] sm:rounded-3xl;
   }
 
   .admin-toast {
-    @apply fixed bottom-6 right-6 z-[60] flex items-center gap-3 rounded-2xl bg-closet-brown px-5 py-3 text-sm font-semibold text-white shadow-closet-lg;
+    @apply fixed bottom-24 z-[60] flex items-center gap-3 rounded-2xl bg-closet-brown px-5 py-3 text-sm font-semibold text-white shadow-closet-lg sm:bottom-6;
+  }
+
+  .admin-btn-touch {
+    @apply min-h-[44px] touch-manipulation;
   }
 }
 

@@ -5,5 +5,4 @@ export interface Wig {
   length: string;
   character?: string;
   color: string;
-  owner: string;
 }

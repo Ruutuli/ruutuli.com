@@ -213,7 +213,6 @@ function parseWigs(rows) {
       length,
       character,
       color,
-      owner: "Ruu",
     };
   });
 }

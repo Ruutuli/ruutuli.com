@@ -133,10 +133,19 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
         title="Roster"
         description={`${cosplays.length} builds on your roster`}
         action={
-          <Link href="/admin/cosplays/new" className="admin-btn-primary inline-flex items-center gap-2">
-            <IconPlus />
-            Add build
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/api/admin/cosplays/pin-cards?all=1"
+              target="_blank"
+              className="admin-btn-secondary text-sm"
+            >
+              Print all pin cards
+            </Link>
+            <Link href="/admin/cosplays/new" className="admin-btn-primary inline-flex items-center gap-2">
+              <IconPlus />
+              Add build
+            </Link>
+          </div>
         }
       />
 
