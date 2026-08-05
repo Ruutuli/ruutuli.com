@@ -11,7 +11,7 @@ export const faqItems: FaqItem[] = [
   {
     question: "How long have you been cosplaying?",
     answer:
-      "Long enough that my wig shelf has become a structural concern. I cosplay casually — this is a hobby, not my day job.",
+      "Since I was 16 — my first cosplay was Haruhi Suzumiya from The Melancholy of Haruhi Suzumiya. Long enough that my wig shelf has become a structural concern. I cosplay casually — this is a hobby, not my day job.",
   },
   {
     question: "Do you have OnlyFans?",
@@ -21,7 +21,7 @@ export const faqItems: FaqItem[] = [
   {
     question: "What's your favorite cosplay?",
     answer:
-      "Hard question — probably Jinx. Ask me again in six months and I might change my mind.",
+      "Hard question — Jinx and Tifa right now. Ask me again in six months and I might change my mind.",
   },
   {
     question: "What are some of your favorite anime, games, and shows?",
@@ -31,5 +31,10 @@ export const faqItems: FaqItem[] = [
   {
     question: "Do you sell prints?",
     answer: "No — too much effort.",
+  },
+  {
+    question: "What sewing machines and 3D printers do you have?",
+    answer:
+      "Three sewing machines, nothing fancy: a Singer Heavy Duty, a Brother CS6000i, and a Janome I stole from my partner after he stopped cosplaying. For 3D printing: a Bambu Lab P1P, an A1 mini, and an Elegoo Saturn resin printer.",
   },
 ];

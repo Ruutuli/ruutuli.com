@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteConfig();
   return {
     title: `About | ${site.name}`,
-    description: "Hi, I'm Ruu — casual cosplayer, full-time job haver, and owner of too many hobbies.",
+    description: "About Ruu — casual cosplayer, facts, bio, and frequently asked questions.",
   };
 }
 

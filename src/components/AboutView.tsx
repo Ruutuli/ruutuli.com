@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import ScallopHeroFrame from "@/components/ScallopHeroFrame";
+import { faqItems } from "@/data/faq";
 
 const aboutFacts = [
   { label: "Name", value: "Ruu (Ruutuli)" },
@@ -34,7 +35,7 @@ export default function AboutView() {
             Hi, I&apos;m Ruu
           </h1>
           <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-closet-brown-light sm:text-lg lg:mx-0">
-            Casual cosplayer. Extreme autism. This website exists for teehees.
+            Casual cosplayer. Weaponized autism. This website exists for teehees.
           </p>
         </div>
 
@@ -80,12 +81,34 @@ export default function AboutView() {
           </div>
         </article>
 
+        <section id="faq" className="scroll-mt-24 space-y-4">
+          <div className="text-center lg:text-left">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-closet-rose">questions</p>
+            <h2 className="mt-2 font-sans text-2xl font-bold text-closet-brown sm:text-3xl">FAQ</h2>
+            <p className="mt-2 text-base text-closet-brown-light">Things people actually ask. Answers are honest.</p>
+          </div>
+          <div className="space-y-3">
+            {faqItems.map((item) => (
+              <details key={item.question} className="group closet-panel-outer overflow-hidden">
+                <summary className="closet-panel-header cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/30 text-closet-brown transition-transform duration-200 group-open:rotate-90">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                  <h3 className="flex-1 font-sans text-base font-bold text-closet-brown sm:text-lg">{item.question}</h3>
+                </summary>
+                <div className="closet-panel-body border-t border-closet-rose/10 pt-4">
+                  <p className="text-base leading-relaxed text-closet-brown-light">{item.answer}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+
         <div className="flex flex-wrap justify-center gap-3 pt-2 lg:justify-start">
           <Link href="/roster" className="closet-btn-peach btn-shimmer !px-6 !py-2.5 text-sm">
             View Cosplays
-          </Link>
-          <Link href="/faq" className="closet-btn-outline !px-6 !py-2.5 text-sm">
-            FAQ
           </Link>
           <Link href="/contact" className="closet-btn-outline !px-6 !py-2.5 text-sm">
             Contact

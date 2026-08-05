@@ -11,7 +11,6 @@ const navLinks = [
   { href: "/about", label: "About" },
   { href: "/roster", label: "Cosplays" },
   { href: "/calendar", label: "Conventions" },
-  { href: "/faq", label: "FAQ" },
   { href: "/media-kit", label: "Media Kit" },
 ];
 
