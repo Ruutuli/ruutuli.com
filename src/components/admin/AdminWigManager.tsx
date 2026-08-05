@@ -29,6 +29,32 @@ type ViewMode = "cards" | "table";
 
 const LENGTHS = ["Short", "Medium", "Long", "Pigtails"];
 
+/** Print-card order for color filter pills. */
+const COLOR_PILL_ORDER = [
+  "pink",
+  "red",
+  "orange",
+  "blonde",
+  "blond",
+  "green",
+  "teal",
+  "blue",
+  "navy",
+  "purple",
+  "black",
+  "gray",
+  "grey",
+  "white",
+  "brown",
+  "brunette",
+  "other",
+];
+
+function colorFamilySortIndex(family: string): number {
+  const idx = COLOR_PILL_ORDER.indexOf(family);
+  return idx === -1 ? COLOR_PILL_ORDER.length : idx;
+}
+
 const BRAND_RING: Record<string, string> = {
   Arda: "ring-closet-rose/60",
   "Arda Silky": "ring-closet-rose/50",
@@ -92,6 +118,47 @@ function WigColorBadge({ color }: { color: string }) {
       <WigColorSwatch color={color} size="sm" />
       {color}
     </span>
+  );
+}
+
+function ColorFilterPills({
+  families,
+  active,
+  onSelect,
+  className = "",
+}: {
+  families: [string, number][];
+  active: string;
+  onSelect: (family: string) => void;
+  className?: string;
+}) {
+  return (
+    <div className={`flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSelect("all")}
+        className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${
+          active === "all" ? "bg-closet-rose text-white" : "bg-closet-blush/50 text-closet-brown"
+        }`}
+      >
+        All colors
+      </button>
+      {families.map(([family, count]) => (
+        <button
+          key={family}
+          type="button"
+          onClick={() => onSelect(active === family ? "all" : family)}
+          className={`admin-btn-touch inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold ring-1 ${
+            active === family
+              ? "bg-closet-rose text-white ring-closet-rose"
+              : "bg-white text-closet-brown ring-closet-pink/50"
+          }`}
+        >
+          <WigColorSwatch color={family === "other" ? "mixed" : family} size="sm" />
+          {wigColorFamilyLabel(family)} ({count})
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -161,7 +228,11 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
       const f = getWigColorFamily(w.color);
       counts.set(f, (counts.get(f) ?? 0) + 1);
     }
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    return Array.from(counts.entries()).sort((a, b) => {
+      const orderDiff = colorFamilySortIndex(a[0]) - colorFamilySortIndex(b[0]);
+      if (orderDiff !== 0) return orderDiff;
+      return b[1] - a[1];
+    });
   }, [wigs]);
 
   const topBrands = useMemo(
@@ -277,20 +348,20 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
   }
 
   return (
-    <div className="space-y-5 pb-28 lg:space-y-6 lg:pb-0">
+    <div className="space-y-5 lg:space-y-6">
       <AdminPageHeader
         title="Wig inventory"
         description="Add, edit, or remove wigs while you stock."
         action={
-          <div className="hidden flex-wrap items-center gap-2 sm:flex">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             <Link
               href="/api/admin/wigs/cards"
               target="_blank"
-              className="admin-btn-secondary admin-btn-touch text-sm"
+              className="admin-btn-secondary admin-btn-touch hidden text-sm sm:inline-flex"
             >
               Print wig cards
             </Link>
-            <AdminButton variant="primary" className="admin-btn-touch" onClick={openAddWig}>
+            <AdminButton variant="primary" className="admin-btn-touch hidden lg:inline-flex" onClick={openAddWig}>
               <IconPlus />
               Add wig
             </AdminButton>
@@ -393,8 +464,8 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
         </div>
       </details>
 
-      {/* Mobile-first stock toolbar */}
-      <div className="sticky top-[7.5rem] z-20 -mx-1 space-y-3 rounded-2xl border border-closet-pink/50 bg-white/95 p-3 shadow-closet backdrop-blur-sm lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+      {/* Stock toolbar */}
+      <div className="space-y-3 lg:space-y-4">
         <AdminSearch
           value={query}
           onChange={setQuery}
@@ -438,6 +509,13 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
             ))}
           </div>
         </div>
+
+        <ColorFilterPills
+          className="lg:hidden"
+          families={colorFamilies}
+          active={colorFilter}
+          onSelect={setColorFilter}
+        />
 
         {hasFilters && (
           <div className="flex flex-wrap items-center gap-2">
@@ -488,32 +566,6 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
             ))}
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            <button
-              type="button"
-              onClick={() => setColorFilter("all")}
-              className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${
-                colorFilter === "all" ? "bg-closet-rose text-white" : "bg-closet-blush/50 text-closet-brown"
-              }`}
-            >
-              All colors
-            </button>
-            {colorFamilies.slice(0, 10).map(([family, count]) => (
-              <button
-                key={family}
-                type="button"
-                onClick={() => setColorFilter(colorFilter === family ? "all" : family)}
-                className={`admin-btn-touch inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold ring-1 ${
-                  colorFilter === family
-                    ? "bg-closet-rose text-white ring-closet-rose"
-                    : "bg-white text-closet-brown ring-closet-pink/50"
-                }`}
-              >
-                <WigColorSwatch color={family === "other" ? "mixed" : family} size="sm" />
-                {wigColorFamilyLabel(family)} ({count})
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
             {(["all", ...LENGTHS] as const).map((len) => (
               <button
                 key={len}
@@ -556,33 +608,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
           ))}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:items-center lg:overflow-visible lg:pb-0">
-          <span className="hidden shrink-0 text-xs font-bold uppercase tracking-wider text-closet-brown-light lg:inline">Color:</span>
-          <button
-            type="button"
-            onClick={() => setColorFilter("all")}
-            className={`admin-btn-touch shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${
-              colorFilter === "all" ? "bg-closet-rose text-white" : "bg-closet-blush/50 text-closet-brown"
-            }`}
-          >
-            All colors
-          </button>
-          {colorFamilies.slice(0, 10).map(([family, count]) => (
-            <button
-              key={family}
-              type="button"
-              onClick={() => setColorFilter(colorFilter === family ? "all" : family)}
-              className={`admin-btn-touch inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold ring-1 ${
-                colorFilter === family
-                  ? "bg-closet-rose text-white ring-closet-rose"
-                  : "bg-white text-closet-brown ring-closet-pink/50"
-              }`}
-            >
-              <WigColorSwatch color={family === "other" ? "mixed" : family} size="sm" />
-              {wigColorFamilyLabel(family)} ({count})
-            </button>
-          ))}
-        </div>
+        <ColorFilterPills families={colorFamilies} active={colorFilter} onSelect={setColorFilter} />
 
         <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:items-center lg:overflow-visible lg:pb-0">
           <span className="hidden shrink-0 text-xs font-bold uppercase tracking-wider text-closet-brown-light lg:inline">Length:</span>
@@ -601,7 +627,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
         </div>
       </div>
 
-      <AdminCard>
+      <AdminCard className="!overflow-visible">
         {filtered.length === 0 ? (
           <AdminEmptyState
             title={wigs.length === 0 ? "No wigs yet" : "No wigs match your filters"}
@@ -633,6 +659,12 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
                 />
               ))}
             </ul>
+            {/* Blank scroll room so the last row clears the fixed bottom bar */}
+            <div
+              className="lg:hidden"
+              aria-hidden="true"
+              style={{ height: "calc(5.5rem + env(safe-area-inset-bottom, 0px) + 3.5rem)" }}
+            />
 
             <div className="hidden lg:block">
             {viewMode === "cards" ? (
@@ -692,7 +724,6 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <div className="max-h-[min(70vh,640px)] overflow-y-auto">
                   <table className="w-full min-w-[720px] text-left text-sm">
                     <thead className="sticky top-0 z-10 bg-closet-blush/95 text-xs uppercase tracking-wide text-closet-brown-light backdrop-blur-sm">
                       <tr>
@@ -751,7 +782,6 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
                       ))}
                     </tbody>
                   </table>
-                </div>
               </div>
             )}
             </div>
@@ -759,7 +789,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
         )}
       </AdminCard>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-closet-pink/60 bg-white/95 p-3 shadow-closet-lg backdrop-blur-sm lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-closet-pink/60 bg-white/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-closet-lg backdrop-blur-sm lg:hidden">
         <div className="mx-auto flex max-w-lg gap-2">
           <button
             type="button"
@@ -770,7 +800,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
           >
             Filters
           </button>
-          <AdminButton variant="primary" className="admin-btn-touch flex-[2] !py-3 text-base" onClick={openAddWig}>
+          <AdminButton variant="primary" className="admin-btn-touch min-w-0 flex-[2] !py-3 text-base" onClick={openAddWig}>
             <IconPlus />
             Add wig
           </AdminButton>
