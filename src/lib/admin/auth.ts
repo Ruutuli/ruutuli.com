@@ -20,7 +20,7 @@ export function getAdminPassword(): string | undefined {
 
 export async function isAdminAuthenticated(): Promise<boolean> {
   const jar = await cookies();
-  return verifySessionToken(jar.get(ADMIN_COOKIE)?.value);
+  return await verifySessionToken(jar.get(ADMIN_COOKIE)?.value);
 }
 
 export function sessionCookieOptions() {

@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
 
-  const token = createSessionToken();
+  const token = await createSessionToken();
   const jar = await cookies();
   jar.set(ADMIN_COOKIE, token, sessionCookieOptions());
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifySessionToken, ADMIN_COOKIE, isAdminAuthConfigured } from "@/lib/admin/sessionToken";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/admin/login") || pathname.startsWith("/api/admin/login")) {
@@ -26,7 +26,7 @@ export function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     const token = request.cookies.get(ADMIN_COOKIE)?.value;
-    if (!verifySessionToken(token)) {
+    if (!(await verifySessionToken(token))) {
       if (pathname.startsWith("/api/admin") && !pathname.startsWith("/api/admin/login")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
