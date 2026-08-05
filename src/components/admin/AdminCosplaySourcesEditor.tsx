@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CosplaySource } from "@/types/cosplay";
+import { AdminImageField } from "./AdminImageField";
 import { AdminButton, AdminField } from "./ui";
 
 const SOURCE_ITEM_DATALIST_ID = "cosplay-source-item-suggestions";
@@ -33,6 +34,7 @@ export default function AdminCosplaySourcesEditor({
   const [newLabel, setNewLabel] = useState<string>("Wig");
   const [newDetail, setNewDetail] = useState("");
   const [newUrl, setNewUrl] = useState("");
+  const [newImage, setNewImage] = useState("");
 
   function updateSource(index: number, patch: Partial<CosplaySource>) {
     onChange(sources.map((s, i) => (i === index ? { ...s, ...patch } : s)));
@@ -51,10 +53,12 @@ export default function AdminCosplaySourcesEditor({
         label: newLabel.trim() || "Other",
         detail,
         url: newUrl.trim() || undefined,
+        image: newImage.trim() || undefined,
       },
     ]);
     setNewDetail("");
     setNewUrl("");
+    setNewImage("");
   }
 
   return (
@@ -127,6 +131,11 @@ export default function AdminCosplaySourcesEditor({
                     className="admin-input w-full"
                   />
                 </label>
+                <AdminImageField
+                  label="Image (optional)"
+                  value={source.image ?? ""}
+                  onChange={(v) => updateSource(index, { image: v.trim() || undefined })}
+                />
               </div>
             </li>
           ))}
@@ -174,6 +183,12 @@ export default function AdminCosplaySourcesEditor({
             Add source
           </AdminButton>
         </div>
+        <AdminImageField
+          label="Image (optional)"
+          value={newImage}
+          onChange={setNewImage}
+          className="mt-3"
+        />
       </div>
 
       <datalist id={SOURCE_ITEM_DATALIST_ID}>

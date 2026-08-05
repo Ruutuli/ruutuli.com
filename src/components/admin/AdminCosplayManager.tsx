@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Cosplay, CosplayStatus, dedupeCosplaysById, getCosplayPartsPercent } from "@/types/cosplay";
+import { Cosplay, CosplayStatus, dedupeCosplaysById } from "@/types/cosplay";
+import { getCosplayProgressPercent } from "@/lib/siteConfig";
 import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
 import { resolveImageSrc } from "@/lib/utils/googleDriveImage";
 import {
@@ -339,9 +340,7 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
 
             <ul className="lg:hidden">
               {pagination.pageItems.map((c) => {
-                const partsPct = getCosplayPartsPercent(c);
-                const progress =
-                  partsPct ?? c.progress?.[0]?.percent ?? (c.status === "completed" ? 100 : 0);
+                const progress = getCosplayProgressPercent(c);
                 const partsLabel =
                   c.parts?.length != null && c.parts.length > 0
                     ? `${c.parts.filter((p) => p.owned).length}/${c.parts.length} parts`
@@ -392,9 +391,7 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
                 </AdminTableHead>
                 <tbody>
                   {pagination.pageItems.map((c) => {
-                    const partsPct = getCosplayPartsPercent(c);
-                    const progress =
-                      partsPct ?? c.progress?.[0]?.percent ?? (c.status === "completed" ? 100 : 0);
+                    const progress = getCosplayProgressPercent(c);
                     const partsLabel =
                       c.parts?.length != null && c.parts.length > 0
                         ? `${c.parts.filter((p) => p.owned).length}/${c.parts.length}`

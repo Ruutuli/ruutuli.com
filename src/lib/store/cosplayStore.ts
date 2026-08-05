@@ -115,7 +115,10 @@ export async function createCosplay(input: Omit<Cosplay, "id"> & { id?: string }
     id = `${id}-${Date.now()}`;
   }
   const cosplay: Cosplay = { ...input, id } as Cosplay;
-  const withParts = cosplay.parts?.length ? syncCosplayProgressFromParts(cosplay) : cosplay;
+  const withParts =
+    cosplay.parts?.length || cosplay.todos?.length
+      ? syncCosplayProgressFromParts(cosplay)
+      : cosplay;
   await collection.insertOne(toDoc(withParts));
   return withParts;
 }
@@ -131,9 +134,11 @@ export async function updateCosplay(id: string, patch: Partial<Cosplay>): Promis
       ? patch.parts.length
         ? syncCosplayProgressFromParts(updated)
         : { ...updated, parts: [] }
-      : updated.parts?.length
+      : patch.todos !== undefined
         ? syncCosplayProgressFromParts(updated)
-        : updated;
+        : updated.parts?.length || updated.todos?.length
+          ? syncCosplayProgressFromParts(updated)
+          : updated;
   const result = await collection.findOneAndReplace(
     { _id: id },
     toDoc(synced),

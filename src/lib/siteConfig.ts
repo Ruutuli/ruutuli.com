@@ -1,4 +1,4 @@
-import { Cosplay, getCosplayPartsPercent } from "@/types/cosplay";
+import { Cosplay, CosplayTodo, getCosplayOverallProgress } from "@/types/cosplay";
 import { defaultSiteSettings, siteAssets } from "@/data/siteDefaults";
 import { SiteSettings } from "@/types/settings";
 
@@ -38,11 +38,11 @@ export function getDashboardProjects(cosplays: Cosplay[], limit = 3): Cosplay[] 
   return shuffled.slice(0, limit);
 }
 
-export function getCosplayProgressPercent(cosplay: Cosplay): number {
+export function getCosplayProgressPercent(cosplay: Cosplay, todos?: CosplayTodo[]): number {
   if (cosplay.status === "retired") return 0;
 
-  const fromParts = getCosplayPartsPercent(cosplay);
-  if (fromParts !== null) return fromParts;
+  const overall = getCosplayOverallProgress(cosplay, todos);
+  if (overall !== null) return overall;
 
   if (cosplay.progress?.length) {
     const total = cosplay.progress.reduce((sum, p) => sum + p.percent, 0);

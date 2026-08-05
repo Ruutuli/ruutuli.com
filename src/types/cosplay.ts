@@ -58,6 +58,8 @@ export interface CosplaySource {
   label: string;
   detail: string;
   url?: string;
+  /** Optional reference photo — Google Drive or direct image URL */
+  image?: string;
 }
 
 export interface Cosplay {
@@ -115,15 +117,36 @@ export function getCosplayPartsPercent(cosplay: Cosplay): number | null {
   return Math.round((owned / cosplay.parts.length) * 100);
 }
 
+/** Combined build progress from costume parts and to-do items (item-weighted). */
+export function getCosplayOverallProgress(
+  cosplay: Cosplay,
+  todos?: CosplayTodo[],
+): number | null {
+  if (cosplay.status === "retired") return null;
+
+  const parts = cosplay.parts ?? [];
+  const resolvedTodos = todos ?? cosplay.todos ?? [];
+  if (parts.length === 0 && resolvedTodos.length === 0) return null;
+
+  const partsDone = parts.filter((p) => p.owned).length;
+  const todosDone = resolvedTodos.reduce(
+    (sum, t) => sum + Math.min(100, Math.max(0, t.percent)) / 100,
+    0,
+  );
+  const total = parts.length + resolvedTodos.length;
+
+  return Math.round(((partsDone + todosDone) / total) * 100);
+}
+
 export function syncCosplayProgressFromParts(cosplay: Cosplay): Cosplay {
   if (cosplay.status === "retired") return cosplay;
-  const pct = getCosplayPartsPercent(cosplay);
+  const pct = getCosplayOverallProgress(cosplay);
   if (pct === null) return cosplay;
   const status: CosplayStatus =
     pct >= 100 ? "completed" : pct > 0 ? "in-progress" : "planned";
   return {
     ...cosplay,
     status,
-    progress: [{ label: "Parts", percent: pct }],
+    progress: [{ label: "Overall", percent: pct }],
   };
 }

@@ -22,11 +22,14 @@ import { getCosplayProgressPercent } from "@/lib/siteConfig";
 import {
   buildCosplayPhotoFallbacks,
   filterCosplayImages,
+  isCosplayPlaceholderImage,
   resolveCosplayDisplayPhoto,
 } from "@/lib/cosplay/images";
+import GoogleDriveImage from "@/components/GoogleDriveImage";
 import { GalleryPhotoCreditMap } from "@/lib/gallery/photoCredits";
 import CosplayPhotoGallery from "@/components/CosplayPhotoGallery";
 import RosterImageSlot from "@/components/RosterImageSlot";
+import { swatchNeedsBorderForName, wigSwatchBackground } from "@/lib/wigColors";
 
 type BoardTab = "overview" | "pieces" | "reference" | "gallery" | "convention" | "todos" | "sources";
 
@@ -93,6 +96,19 @@ function isWigOrEyesPart(part: CosplayPart): boolean {
 
 function partByCategory(parts: CosplayPart[] | undefined, category: CosplayPartCategory) {
   return parts?.find((p) => p.category === category);
+}
+
+function ColorSwatch({ color }: { color: string }) {
+  return (
+    <span
+      className="inline-block h-4 w-4 shrink-0 rounded-full ring-1 ring-black/10"
+      style={{
+        background: wigSwatchBackground(color),
+        boxShadow: swatchNeedsBorderForName(color) ? "inset 0 0 0 1px rgba(0,0,0,0.12)" : undefined,
+      }}
+      aria-hidden
+    />
+  );
 }
 
 function statusLabel(status: Cosplay["status"]) {
@@ -312,8 +328,20 @@ function sourceGroupRank(label: string): number {
 
 function SourceCard({ source }: { source: CosplaySource }) {
   const hostname = source.url ? linkHostname(source.url) : null;
+  const hasImage = !!source.image && !isCosplayPlaceholderImage(source.image);
   const content = (
     <>
+      {hasImage ? (
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-closet-pink/40 bg-closet-blush">
+          <GoogleDriveImage
+            src={source.image!}
+            alt=""
+            fill
+            className="h-full w-full object-cover"
+            sizes="(max-width: 640px) 100vw, 280px"
+          />
+        </div>
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <span className="inline-flex items-center gap-1.5 rounded-full border border-closet-pink/50 bg-closet-blush/50 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-closet-rose">
           <SourceLabelIcon label={source.label} />
@@ -527,7 +555,7 @@ export default function CosplayBoard({
   const [tab, setTab] = useState<BoardTab>("overview");
 
   const isRetired = cosplay.status === "retired";
-  const overall = isRetired ? 0 : getCosplayProgressPercent(cosplay);
+  const overall = isRetired ? 0 : getCosplayProgressPercent(cosplay, todos);
   const partsPercent = getCosplayPartsPercent(cosplay);
   const doneTasks = todos.filter(isCosplayTodoDone).length;
   const openTasks = getOpenCosplayTodos(todos);
@@ -669,24 +697,24 @@ export default function CosplayBoard({
               </p>
             )}
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              <div className="rounded-2xl border border-closet-pink/50 bg-closet-blush/30 px-3 py-3 text-center">
-                <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-closet-rose">Convention</p>
-                <p className="mt-1 text-xs font-semibold leading-snug text-closet-brown sm:text-sm">
-                  {cosplay.convention || "—"}
-                </p>
-              </div>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div className="rounded-2xl border border-closet-pink/50 bg-closet-blush/30 px-3 py-3 text-center">
                 <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-closet-rose">Wig</p>
-                <p className="mt-1 text-xs font-semibold leading-snug text-closet-brown sm:text-sm">
-                  {wig?.name || "—"}
-                </p>
+                <div className="mt-1.5 flex items-center justify-center gap-2">
+                  {wig?.name ? <ColorSwatch color={wig.name} /> : null}
+                  <p className="text-xs font-semibold leading-snug text-closet-brown sm:text-sm">
+                    {wig?.name || "—"}
+                  </p>
+                </div>
               </div>
               <div className="rounded-2xl border border-closet-pink/50 bg-closet-blush/30 px-3 py-3 text-center">
                 <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-closet-rose">Eyes</p>
-                <p className="mt-1 text-xs font-semibold leading-snug text-closet-brown sm:text-sm">
-                  {eyes?.name || "—"}
-                </p>
+                <div className="mt-1.5 flex items-center justify-center gap-2">
+                  {eyes?.name ? <ColorSwatch color={eyes.name} /> : null}
+                  <p className="text-xs font-semibold leading-snug text-closet-brown sm:text-sm">
+                    {eyes?.name || "—"}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -709,12 +737,34 @@ export default function CosplayBoard({
             </div>
 
             {(cosplay.deadline || (!isRetired && partsPercent !== null) || (todos.length > 0 && !isRetired)) && (
-              <p className="text-xs text-closet-brown-light">
-                {!isRetired && partsPercent !== null ? `${partsPercent}% parts owned` : null}
-                {!isRetired && partsPercent !== null && cosplay.deadline ? " · " : null}
-                {cosplay.deadline ? `Deadline ${formatEventDate(cosplay.deadline)}` : null}
-                {!isRetired && todos.length > 0 ? `${cosplay.deadline ? " · " : ""}${doneTasks}/${todos.length} tasks` : null}
-              </p>
+              <div className="flex flex-wrap gap-2">
+                {!isRetired && partsPercent !== null ? (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-closet-pink/50 bg-closet-blush/40 px-3 py-1.5 text-xs">
+                    <span className="h-1.5 w-10 overflow-hidden rounded-full bg-closet-blush">
+                      <span
+                        className="block h-full rounded-full bg-closet-rose"
+                        style={{ width: `${partsPercent}%` }}
+                      />
+                    </span>
+                    <span className="font-semibold tabular-nums text-closet-brown">{partsPercent}%</span>
+                    <span className="text-closet-brown-light">parts owned</span>
+                  </span>
+                ) : null}
+                {cosplay.deadline ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-closet-pink/50 bg-white/60 px-3 py-1.5 text-xs text-closet-brown">
+                    <span className="text-closet-brown-light">Deadline</span>
+                    <span className="font-semibold">{formatEventDate(cosplay.deadline)}</span>
+                  </span>
+                ) : null}
+                {!isRetired && todos.length > 0 ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-closet-pink/50 bg-white/60 px-3 py-1.5 text-xs">
+                    <span className="font-semibold tabular-nums text-closet-brown">
+                      {doneTasks}/{todos.length}
+                    </span>
+                    <span className="text-closet-brown-light">tasks done</span>
+                  </span>
+                ) : null}
+              </div>
             )}
           </div>
         </div>
