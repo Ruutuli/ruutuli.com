@@ -11,6 +11,7 @@ import {
 } from "@/lib/store/galleryStore";
 import { resolveCosplayTodos } from "@/lib/cosplay/todos";
 import { getTasks } from "@/lib/store/taskStore";
+import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { getSiteConfig } from "@/lib/server/siteConfig";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CosplayBoardPage({ params }: PageProps) {
   const { id } = await params;
-  const [cosplay, allTasks, photoCredits, buildPhotoUrls, referencePhotoUrls, conventionPhotoUrls, displayPhotoCandidates] =
+  const [cosplay, allTasks, photoCredits, buildPhotoUrls, referencePhotoUrls, conventionPhotoUrls, displayPhotoCandidates, isAdmin] =
     await Promise.all([
     getCosplayById(id),
     getTasks(),
@@ -40,6 +41,7 @@ export default async function CosplayBoardPage({ params }: PageProps) {
     getGallerySectionPhotosForCosplay(id, "reference"),
     getGallerySectionPhotosForCosplay(id, "convention"),
     getGalleryDisplayPhotoCandidatesForCosplay(id),
+    isAdminAuthenticated(),
   ]);
 
   if (!cosplay) notFound();
@@ -59,6 +61,7 @@ export default async function CosplayBoardPage({ params }: PageProps) {
           referencePhotoUrls={referencePhotoUrls}
           conventionPhotoUrls={conventionPhotoUrls}
           displayPhotoCandidates={displayPhotoCandidates}
+          isAdmin={isAdmin}
         />
       </div>
     </SiteShell>

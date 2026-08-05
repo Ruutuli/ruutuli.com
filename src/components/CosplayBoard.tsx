@@ -345,9 +345,11 @@ function SourceCard({ source }: { source: CosplaySource }) {
 function CosplaySourcesList({
   sources,
   cosplayId,
+  isAdmin,
 }: {
   sources: CosplaySource[];
   cosplayId: string;
+  isAdmin: boolean;
 }) {
   const grouped = useMemo(() => {
     const map = new Map<string, CosplaySource[]>();
@@ -377,12 +379,14 @@ function CosplaySourcesList({
         <p className="mx-auto mt-1 max-w-sm text-sm text-closet-brown-light">
           Track where pieces came from, plus reference links and tutorials for this build.
         </p>
-        <Link
-          href={`/admin/cosplays/${cosplayId}/edit?tab=sources`}
-          className="closet-btn-outline mt-5 !px-5 !py-2 !text-sm"
-        >
-          Add sources & links
-        </Link>
+        {isAdmin ? (
+          <Link
+            href={`/admin/cosplays/${cosplayId}/edit?tab=sources`}
+            className="closet-btn-outline mt-5 !px-5 !py-2 !text-sm"
+          >
+            Add sources & links
+          </Link>
+        ) : null}
       </div>
     );
   }
@@ -397,12 +401,14 @@ function CosplaySourcesList({
             {linkCount > 0 ? ` · ${linkCount} link${linkCount === 1 ? "" : "s"}` : ""}
           </p>
         </div>
-        <Link
-          href={`/admin/cosplays/${cosplayId}/edit?tab=sources`}
-          className="text-xs font-semibold text-closet-rose hover:text-closet-mauve"
-        >
-          Manage →
-        </Link>
+        {isAdmin ? (
+          <Link
+            href={`/admin/cosplays/${cosplayId}/edit?tab=sources`}
+            className="text-xs font-semibold text-closet-rose hover:text-closet-mauve"
+          >
+            Manage →
+          </Link>
+        ) : null}
       </div>
 
       {grouped.map(({ label, items }) => (
@@ -507,6 +513,7 @@ export default function CosplayBoard({
   referencePhotoUrls = [],
   conventionPhotoUrls = [],
   displayPhotoCandidates,
+  isAdmin = false,
 }: {
   cosplay: Cosplay;
   todos: CosplayTodo[];
@@ -515,6 +522,7 @@ export default function CosplayBoard({
   referencePhotoUrls?: string[];
   conventionPhotoUrls?: string[];
   displayPhotoCandidates?: { cosplayPhotos: string[]; referencePhotos: string[] };
+  isAdmin?: boolean;
 }) {
   const [tab, setTab] = useState<BoardTab>("overview");
 
@@ -600,9 +608,11 @@ export default function CosplayBoard({
           <span aria-hidden>/</span>
           <span className="font-semibold text-closet-brown">{cosplay.character}</span>
         </nav>
-        <Link href={`/admin/cosplays/${cosplay.id}/edit`} className="closet-btn-outline !py-1.5 !text-xs sm:!text-sm">
-          Edit
-        </Link>
+        {isAdmin ? (
+          <Link href={`/admin/cosplays/${cosplay.id}/edit`} className="closet-btn-outline !py-1.5 !text-xs sm:!text-sm">
+            Edit
+          </Link>
+        ) : null}
       </div>
 
       {/* Hero */}
@@ -852,7 +862,7 @@ export default function CosplayBoard({
                 Where pieces came from, plus references and tutorials for this build.
               </p>
             </div>
-            {sources.length > 0 ? (
+            {isAdmin && sources.length > 0 ? (
               <Link
                 href={`/admin/cosplays/${cosplay.id}/edit?tab=sources`}
                 className="shrink-0 text-xs font-semibold text-closet-rose hover:text-closet-mauve"
@@ -862,7 +872,7 @@ export default function CosplayBoard({
             ) : null}
           </div>
           <div className="p-4 sm:p-6">
-            <CosplaySourcesList sources={sources} cosplayId={cosplay.id} />
+            <CosplaySourcesList sources={sources} cosplayId={cosplay.id} isAdmin={isAdmin} />
           </div>
         </section>
       )}
