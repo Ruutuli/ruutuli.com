@@ -17,6 +17,7 @@ import {
 } from "@/types/task";
 import { formatEventDate } from "@/data/calendar";
 import { CosplayTodoWithContext, getAllCosplayTodos, groupTodosByCosplay, resolveCosplayTodos } from "@/lib/cosplay/todos";
+import AdminCosplaySearchField from "./AdminCosplaySearchField";
 import { IconPlus } from "./icons";
 import {
   AdminButton,
@@ -457,7 +458,7 @@ export default function AdminTodosManager({
               <AdminButton
                 variant="primary"
                 onClick={() => void saveEditing()}
-                disabled={saving || !editing.label.trim()}
+                disabled={saving || !editing.label.trim() || !editing.cosplayId}
               >
                 {saving ? "Saving…" : "Save"}
               </AdminButton>
@@ -465,14 +466,10 @@ export default function AdminTodosManager({
           }
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <AdminSelect
-              label="Build"
-              value={editing.cosplayId}
-              onChange={(v) => setEditing({ ...editing, cosplayId: v })}
-              options={activeCosplays.map((c) => ({
-                value: c.id,
-                label: `${c.character} · ${c.series}`,
-              }))}
+            <AdminCosplaySearchField
+              cosplays={activeCosplays}
+              valueId={editing.cosplayId}
+              onChange={(cosplayId) => setEditing({ ...editing, cosplayId })}
               className="sm:col-span-2"
             />
             <AdminField
