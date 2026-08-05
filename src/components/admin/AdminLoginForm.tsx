@@ -1,8 +1,15 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { AdminButton } from "./ui";
+
+function initialError(searchParams: ReturnType<typeof useSearchParams>): string {
+  if (searchParams.get("error") === "not-configured") {
+    return "Admin login is not configured. Set ADMIN_PASSWORD in .env.";
+  }
+  return "";
+}
 
 export default function AdminLoginForm() {
   const router = useRouter();
@@ -10,6 +17,10 @@ export default function AdminLoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setError(initialError(searchParams));
+  }, [searchParams]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

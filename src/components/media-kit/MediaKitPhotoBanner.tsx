@@ -24,6 +24,12 @@ function pickReplacement(
   return pickFrom[Math.floor(Math.random() * pickFrom.length)];
 }
 
+/** Stable order for SSR + hydration; random shuffle runs in useEffect after mount. */
+function initialSlots(pool: GalleryBannerPhoto[], count: number): GalleryBannerPhoto[] {
+  if (pool.length === 0) return [];
+  return Array.from({ length: count }, (_, index) => pool[index % pool.length]);
+}
+
 function randomSlots(pool: GalleryBannerPhoto[], count: number): GalleryBannerPhoto[] {
   if (pool.length === 0) return [];
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
@@ -91,7 +97,7 @@ function BannerSlot({ image }: { image: GalleryBannerPhoto }) {
 
 export default function MediaKitPhotoBanner({ photos }: { photos: GalleryBannerPhoto[] }) {
   const pool = useMemo(() => photos.filter((p) => p.src?.trim()), [photos]);
-  const [slots, setSlots] = useState<GalleryBannerPhoto[]>(() => randomSlots(pool, SLOT_COUNT));
+  const [slots, setSlots] = useState<GalleryBannerPhoto[]>(() => initialSlots(pool, SLOT_COUNT));
   const [reducedMotion, setReducedMotion] = useState(false);
   const slotCursor = useRef(0);
 
