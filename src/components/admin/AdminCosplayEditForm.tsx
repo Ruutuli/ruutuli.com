@@ -273,6 +273,11 @@ export default function AdminCosplayEditForm({
               ★ Homepage spotlight
             </span>
           )}
+          {form.featuredForMediaKit && (
+            <span className="rounded-full border border-closet-rose/40 bg-closet-blush px-3 py-1 text-xs font-bold text-closet-rose">
+              Media Kit featured
+            </span>
+          )}
           {form.convention && (
             <span className="rounded-full border border-violet-300/60 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-900">
               🎫 {form.convention}
@@ -366,6 +371,18 @@ export default function AdminCosplayEditForm({
                 <p className="text-xs text-closet-brown-light">Shows this build prominently on the homepage</p>
               </div>
             </label>
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-closet-pink/50 bg-closet-blush/20 px-4 py-3.5 sm:col-span-2">
+              <input
+                type="checkbox"
+                checked={!!form.featuredForMediaKit}
+                onChange={(e) => update({ featuredForMediaKit: e.target.checked })}
+                className="h-4 w-4 rounded border-closet-pink text-closet-rose focus:ring-closet-rose/30"
+              />
+              <div>
+                <span className="text-sm font-semibold text-closet-brown">Featured on Media Kit</span>
+                <p className="text-xs text-closet-brown-light">Shows in the Featured Work section on the public Media Kit page</p>
+              </div>
+            </label>
           </div>
         </AdminCard>
       )}
@@ -429,6 +446,18 @@ export default function AdminCosplayEditForm({
               label="Cosplay photo"
               value={form.image ?? ""}
               onChange={(v) => update({ image: v })}
+            />
+            <AdminField
+              label="Cosplay photo object position"
+              value={form.imagePosition ?? ""}
+              onChange={(v) => update({ imagePosition: v || undefined })}
+              placeholder="center top"
+            />
+            <AdminField
+              label="Character art object position"
+              value={form.characterArtPosition ?? ""}
+              onChange={(v) => update({ characterArtPosition: v || undefined })}
+              placeholder="center top"
             />
             <AdminGalleryField
               label="Gallery"

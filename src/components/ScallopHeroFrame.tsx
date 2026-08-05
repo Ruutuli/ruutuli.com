@@ -13,7 +13,7 @@ export default function ScallopHeroFrame({ src, alt }: ScallopHeroFrameProps) {
         src={siteAssets.makiBig}
         alt=""
         fill
-        className="hero-float object-contain drop-shadow-closet-lg"
+        className="animate-spin-slow object-contain drop-shadow-closet-lg"
         priority
         sizes="(max-width: 640px) 20rem, 28rem"
         aria-hidden

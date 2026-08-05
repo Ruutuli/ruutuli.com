@@ -16,6 +16,7 @@ export const COLLECTIONS = {
   galleryItems: "gallery_items",
   galleryExclusions: "gallery_exclusions",
   galleryVocabulary: "gallery_vocabulary",
+  mediaKit: "media_kit",
 } as const;
 
 export async function getDb(): Promise<Db> {

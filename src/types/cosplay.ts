@@ -55,6 +55,10 @@ export interface Cosplay {
   featured?: boolean;
   /** Primary dashboard spotlight build */
   spotlight?: boolean;
+  /** Show on the public Media Kit featured work section */
+  featuredForMediaKit?: boolean;
+  /** Optional CSS object-position for the main cosplay photo */
+  imagePosition?: string;
   /** Outfit variant label from spreadsheet */
   outfit?: string;
   /** Upcoming convention this build is for */

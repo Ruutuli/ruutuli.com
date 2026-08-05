@@ -310,16 +310,22 @@ export function resolveImageSrc(url: string | null | undefined): string {
   return decodeUrlEntities(url.trim()) || IMAGE_PLACEHOLDER_URL;
 }
 
-/** Lightweight Drive thumbnail for admin grid/modals — avoids full proxy downloads. */
+/** Admin grid/modals — proxy via server so private Drive files load reliably. */
 export function getGalleryAdminImageSrc(
   url: string | null | undefined,
   options?: { driveFileId?: string | null; width?: number },
 ): string {
+  void options?.width;
   const fileId =
     sanitizeGoogleDriveFileId(options?.driveFileId) ?? getGoogleDriveFileId(normalizeImageUrl(url ?? ""));
   if (fileId) {
-    const w = Math.min(Math.max(options?.width ?? 400, 200), 1200);
-    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${w}`;
+    const viewUrl =
+      url?.trim() && isGoogleHostedImageUrl(normalizeImageUrl(url))
+        ? normalizeImageUrl(url)
+        : `https://drive.google.com/file/d/${fileId}/view`;
+    const proxied = getProxyUrl(viewUrl);
+    if (proxied.startsWith("/api/images/proxy")) return proxied;
+    return `/api/images/proxy?fileId=${encodeURIComponent(fileId)}`;
   }
 
   if (!url?.trim()) return IMAGE_PLACEHOLDER_URL;

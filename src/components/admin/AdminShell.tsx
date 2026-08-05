@@ -20,6 +20,7 @@ const links = [
   { href: "/admin/gallery", label: "Gallery", icon: IconGallery },
   { href: "/admin/wigs", label: "Wigs", icon: IconWig },
   { href: "/admin/tasks", label: "Build planner", icon: IconTasks },
+  { href: "/admin/media-kit", label: "Media Kit", icon: IconExternal },
   { href: "/admin/settings", label: "Settings", icon: IconSettings },
 ];
 

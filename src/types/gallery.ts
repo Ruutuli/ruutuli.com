@@ -54,6 +54,12 @@ export interface GalleryPhotoCredit {
   photographer?: string;
 }
 
+/** Lightweight photo entry for the media kit banner collage. */
+export interface GalleryBannerPhoto {
+  src: string;
+  alt: string;
+}
+
 export interface GalleryListFilters {
   q?: string;
   published?: GalleryPublishedFilter;

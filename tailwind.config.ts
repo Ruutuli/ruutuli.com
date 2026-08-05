@@ -62,6 +62,7 @@ const config: Config = {
         "scale-in": "scaleIn 0.5s ease-out forwards",
         "progress-fill": "progressFill 1s ease-out forwards",
         "pulse-soft": "pulseSoft 2.5s ease-in-out infinite",
+        "spin-slow": "spinSlow 24s linear infinite",
       },
       keyframes: {
         fadeUp: {
@@ -103,6 +104,10 @@ const config: Config = {
         pulseSoft: {
           "0%, 100%": { boxShadow: "0 0 0 0 rgba(217, 89, 112, 0.25)" },
           "50%": { boxShadow: "0 0 0 6px rgba(217, 89, 112, 0)" },
+        },
+        spinSlow: {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
         },
       },
     },

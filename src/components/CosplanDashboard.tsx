@@ -16,7 +16,7 @@ export default function CosplanDashboard({ cosplays, tasks, events }: CosplanDas
     <div className="cosplan-shell">
       <div className="space-y-6 pb-10 pt-4 sm:space-y-8 sm:pb-12 lg:pt-5">
         <DashboardWelcome cosplays={cosplays} tasks={tasks} />
-        <FeaturedProject cosplays={cosplays} tasks={tasks} events={events} />
+        <FeaturedProject cosplays={cosplays} events={events} />
         <ProjectGrid cosplays={cosplays} />
       </div>
     </div>

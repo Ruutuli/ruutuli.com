@@ -9,11 +9,12 @@ import { getDriveFileMetadata, listImageFilesInFolder } from "@/lib/google-drive
 import { getGoogleDriveFileId } from "@/lib/utils/googleDriveImage";
 import { COLLECTIONS, ensureDbIndexes, getCollection } from "@/lib/mongodb/db";
 import { parseGalleryFilenameTags } from "@/lib/gallery/parseFilenameTags";
-import { getCosplayById, updateCosplay } from "@/lib/store/cosplayStore";
+import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
+import { getCosplayById, getCosplays, updateCosplay } from "@/lib/store/cosplayStore";
 import { getEvents } from "@/lib/store/eventStore";
 import { Cosplay } from "@/types/cosplay";
 import { ConEvent } from "@/types/event";
-import { GalleryItem, GalleryListFilters, GalleryListResult, GalleryPhotoCredit, GallerySection } from "@/types/gallery";
+import { GalleryItem, GalleryBannerPhoto, GalleryListFilters, GalleryListResult, GalleryPhotoCredit, GallerySection } from "@/types/gallery";
 import { Filter } from "mongodb";
 
 function nowIso() {
@@ -544,6 +545,65 @@ function imageUrlsMatch(a: string, b: string): boolean {
   const idB = getGoogleDriveFileId(b);
   if (idA && idB) return idA === idB;
   return a.trim() === b.trim();
+}
+
+function isGalleryCosplayPhoto(item: GalleryItem): boolean {
+  if (item.imageType === "reference") return false;
+  if (item.imageType === "featured") return true;
+  // Legacy untagged items — only include when placed in a cosplay gallery section
+  return item.gallerySection === "convention" || item.gallerySection === "build";
+}
+
+function isCharacterReferencePhoto(item: GalleryItem, cosplays: Cosplay[]): boolean {
+  if (item.imageType === "reference") return true;
+  return cosplays.some((cosplay) => {
+    const art = cosplay.characterArt;
+    if (!art || isCosplayPlaceholderImage(art)) return false;
+    return imageUrlsMatch(item.viewUrl, art);
+  });
+}
+
+/** Published gallery photos for the media kit banner (cosplay photos only — no reference art). */
+export async function getPublishedGalleryPhotosForBanner(): Promise<GalleryBannerPhoto[]> {
+  await ensureDbIndexes();
+  const [collection, cosplays] = await Promise.all([
+    getCollection<GalleryDoc>(COLLECTIONS.galleryItems),
+    getCosplays(),
+  ]);
+  const docs = await collection
+    .find({
+      published: true,
+      viewUrl: { $exists: true, $gt: "" },
+      imageType: { $ne: "reference" },
+    })
+    .sort({ sortOrder: 1, name: 1 })
+    .toArray();
+
+  return docs
+    .map(fromDoc)
+    .filter((item) => isGalleryCosplayPhoto(item) && !isCharacterReferencePhoto(item, cosplays))
+    .map((item) => ({
+      src: item.viewUrl,
+      alt: item.photographer
+        ? `Cosplay photo by ${item.photographer}`
+        : item.name?.trim() || "Cosplay gallery photo",
+    }));
+}
+
+/** First published gallery photo URL for a cosplay — used when roster image is unset. */
+export async function getGalleryCoverPhotoForCosplay(cosplayId: string): Promise<string | null> {
+  await ensureDbIndexes();
+  const collection = await getCollection<GalleryDoc>(COLLECTIONS.galleryItems);
+  const doc = await collection.findOne(
+    {
+      cosplayIds: cosplayId,
+      published: true,
+      viewUrl: { $exists: true, $gt: "" },
+      $or: [{ imageType: { $exists: false } }, { imageType: null }, { imageType: "featured" }],
+    },
+    { sort: { sortOrder: 1, name: 1 } },
+  );
+  return doc ? fromDoc(doc).viewUrl : null;
 }
 
 /** Resolve photographer / convention credits for a cosplay's public gallery photos. */
