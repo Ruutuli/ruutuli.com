@@ -111,7 +111,7 @@ export async function getGalleryExclusions(): Promise<Set<string>> {
 }
 
 export async function addGalleryExclusion(driveFileId: string): Promise<void> {
-  const collection = await getCollection(COLLECTIONS.galleryExclusions);
+  const collection = await getCollection<{ _id: string }>(COLLECTIONS.galleryExclusions);
   await collection.updateOne(
     { _id: driveFileId },
     { $set: { _id: driveFileId, driveFileId, excludedAt: nowIso() } },
@@ -275,7 +275,7 @@ export async function getGalleryItemById(id: string): Promise<GalleryItem | null
 }
 
 export async function upsertGalleryItem(item: GalleryItem): Promise<GalleryItem> {
-  const collection = await getCollection(COLLECTIONS.galleryItems);
+  const collection = await getCollection<GalleryItem & { _id: string }>(COLLECTIONS.galleryItems);
   await collection.replaceOne({ _id: item.id }, toDoc(item), { upsert: true });
   return item;
 }
@@ -306,7 +306,9 @@ async function rememberGalleryVocabulary(entries: {
   convention?: string;
   photographer?: string;
 }): Promise<void> {
-  const collection = await getCollection(COLLECTIONS.galleryVocabulary);
+  const collection = await getCollection<{ _id: string; type: GalleryVocabularyType; name: string }>(
+    COLLECTIONS.galleryVocabulary,
+  );
   const ts = nowIso();
   const operations: {
     updateOne: {
@@ -364,7 +366,7 @@ async function getGalleryVocabulary(): Promise<{ conventions: string[]; photogra
 export async function removeGalleryItem(id: string): Promise<boolean> {
   const item = await getGalleryItemById(id);
   if (!item) return false;
-  const collection = await getCollection(COLLECTIONS.galleryItems);
+  const collection = await getCollection<GalleryItem & { _id: string }>(COLLECTIONS.galleryItems);
   await collection.deleteOne({ _id: id });
   await addGalleryExclusion(item.driveFileId);
   return true;
@@ -383,7 +385,9 @@ export async function bulkRemoveGalleryItems(
   const items = docs.map(fromDoc);
   await collection.deleteMany({ _id: { $in: items.map((item) => item.id) } });
 
-  const exclusionCollection = await getCollection(COLLECTIONS.galleryExclusions);
+  const exclusionCollection = await getCollection<{ _id: string; driveFileId: string }>(
+    COLLECTIONS.galleryExclusions,
+  );
   const ts = nowIso();
   await exclusionCollection.bulkWrite(
     items.map((item) => ({

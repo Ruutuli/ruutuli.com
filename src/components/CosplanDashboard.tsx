@@ -15,14 +15,12 @@ interface CosplanDashboardProps {
 export default function CosplanDashboard({ cosplays, tasks, events }: CosplanDashboardProps) {
   return (
     <div className="cosplan-shell">
-      <div className="space-y-6 pb-10 pt-4 sm:space-y-7 sm:pb-12 lg:pt-5">
+      <div className="space-y-6 pb-10 pt-4 sm:space-y-8 sm:pb-12 lg:pt-5">
         <DashboardWelcome cosplays={cosplays} tasks={tasks} />
         <FeaturedProject cosplays={cosplays} tasks={tasks} events={events} />
         <div className="cosplan-layout">
           <ProjectGrid cosplays={cosplays} />
-          <aside id="focus">
-            <WeekTasks tasks={tasks} />
-          </aside>
+          <WeekTasks tasks={tasks} />
         </div>
       </div>
     </div>

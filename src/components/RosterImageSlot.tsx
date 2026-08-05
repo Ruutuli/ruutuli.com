@@ -22,6 +22,7 @@ type RosterImageSlotProps = {
   emptyHint?: string;
   fill?: boolean;
   className?: string;
+  objectPosition?: string;
   sizes?: string;
   priority?: boolean;
 };
@@ -34,6 +35,7 @@ export default function RosterImageSlot({
   emptyHint,
   fill = true,
   className = "object-cover object-top",
+  objectPosition,
   sizes,
   priority,
 }: RosterImageSlotProps) {
@@ -47,6 +49,7 @@ export default function RosterImageSlot({
       alt={alt}
       fill={fill}
       className={className}
+      style={objectPosition ? { objectPosition } : undefined}
       sizes={sizes}
       priority={priority}
       fallbackSrc=""

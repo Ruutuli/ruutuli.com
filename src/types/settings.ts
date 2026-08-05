@@ -2,9 +2,13 @@ export interface SiteSettings {
   name: string;
   displayName: string;
   tagline: string;
+  roles: string;
   bio: string;
-  socials: {    instagram: string;
+  contactEmail: string;
+  socials: {
+    instagram: string;
     twitter: string;
     tiktok: string;
+    twitch: string;
   };
 }

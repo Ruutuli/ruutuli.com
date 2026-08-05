@@ -40,6 +40,8 @@ export interface Cosplay {
   description: string;
   /** PNG / art of the character — front of roster flip card */
   characterArt: string;
+  /** Optional CSS object-position for character art (e.g. "center top") */
+  characterArtPosition?: string;
   /** Main cosplay photo — back of roster flip card */
   image: string;
   /** Full gallery opened when the roster card is clicked */

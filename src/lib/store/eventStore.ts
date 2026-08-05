@@ -29,14 +29,14 @@ export async function getEventById(id: string): Promise<ConEvent | undefined> {
 }
 
 async function seedEvents(): Promise<void> {
-  const collection = await getCollection(COLLECTIONS.events);
+  const collection = await getCollection<ConEvent & { _id: string }>(COLLECTIONS.events);
   const count = await collection.countDocuments();
   if (count > 0) return;
   await collection.insertMany(defaultEvents.map(withMongoId));
 }
 
 export async function createEvent(input: Omit<ConEvent, "id"> & { id?: string }): Promise<ConEvent> {
-  const collection = await getCollection(COLLECTIONS.events);
+  const collection = await getCollection<ConEvent & { _id: string }>(COLLECTIONS.events);
   let id =
     input.id?.trim() ||
     input.title
@@ -61,7 +61,7 @@ export async function updateEvent(id: string, patch: Partial<ConEvent>): Promise
 }
 
 export async function deleteEvent(id: string): Promise<boolean> {
-  const collection = await getCollection(COLLECTIONS.events);
+  const collection = await getCollection<ConEvent & { _id: string }>(COLLECTIONS.events);
   const result = await collection.deleteOne({ _id: id });
   return result.deletedCount === 1;
 }

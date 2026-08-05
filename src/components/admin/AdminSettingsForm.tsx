@@ -15,7 +15,9 @@ const FIELDS: { key: keyof SiteSettings; label: string; multiline?: boolean }[] 
   { key: "name", label: "Site name" },
   { key: "displayName", label: "Display name" },
   { key: "tagline", label: "Tagline" },
+  { key: "roles", label: "Roles", multiline: true },
   { key: "bio", label: "Bio", multiline: true },
+  { key: "contactEmail", label: "Contact email" },
 ];
 
 export default function AdminSettingsForm({ initial }: { initial: SiteSettings }) {
@@ -79,6 +81,11 @@ export default function AdminSettingsForm({ initial }: { initial: SiteSettings }
             label="TikTok URL"
             value={settings.socials.tiktok}
             onChange={(v) => setSettings({ ...settings, socials: { ...settings.socials, tiktok: v } })}
+          />
+          <AdminField
+            label="Twitch URL"
+            value={settings.socials.twitch}
+            onChange={(v) => setSettings({ ...settings, socials: { ...settings.socials, twitch: v } })}
           />
           <AdminField
             label="X / Twitter URL"

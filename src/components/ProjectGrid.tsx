@@ -2,52 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { getCosplayProgressPercent, getDashboardProjects } from "@/lib/siteConfig";
 import { getCosplayDisplayImage } from "@/lib/cosplay/images";
-import { Cosplay, CosplayProgress } from "@/types/cosplay";
+import { Cosplay } from "@/types/cosplay";
 import RosterImageSlot from "./RosterImageSlot";
-
-const CATEGORY_ICONS: Record<string, ReactNode> = {
-  Sewing: (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v4m0 0a4 4 0 100 8 4 4 0 000-8zm0 0V4m6 8h2M4 12h2" />
-    </svg>
-  ),
-  Armor: (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l8 4v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V7l8-4z" />
-    </svg>
-  ),
-  Wig: (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 14c3.5 0 6-2 6-5.5S15 4 12 4 6 5.5 6 8.5 8.5 14 12 14zm-3 2c-2 1-3 2.5-3 4.5h12c0-2-1-3.5-3-4.5" />
-    </svg>
-  ),
-  Accessories: (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4c2 2.5 5 3 5 6a5 5 0 11-10 0c0-3 3-3.5 5-6z" />
-    </svg>
-  ),
-};
-
-const DEFAULT_CATEGORIES = ["Sewing", "Armor", "Wig", "Accessories"];
-
-function resolveCategories(progress?: CosplayProgress[]): CosplayProgress[] {
-  if (progress?.length) return progress.slice(0, 4);
-  return DEFAULT_CATEGORIES.map((label) => ({ label, percent: 0 }));
-}
-
-function ProgressDots({ percent }: { percent: number }) {
-  const filled = percent >= 100 ? 3 : percent >= 50 ? 2 : percent > 0 ? 1 : 0;
-  return (
-    <span className="flex items-center gap-0.5" aria-hidden>
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={`h-1 w-1 rounded-full ${i < filled ? "bg-closet-rose" : "bg-closet-pink/50"}`}
-        />
-      ))}
-    </span>
-  );
-}
 
 function categoryTag(series: string): string {
   const s = series.toLowerCase();
@@ -56,79 +12,125 @@ function categoryTag(series: string): string {
   return "Cosplay";
 }
 
+function CardAction({
+  href,
+  label,
+  children,
+}: {
+  href: string;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className="cosplan-focus-ring flex h-8 w-8 items-center justify-center rounded-lg text-closet-rose transition-colors hover:bg-closet-blush hover:text-closet-mauve"
+    >
+      {children}
+    </Link>
+  );
+}
+
+function RosterCard({ cosplay }: { cosplay: Cosplay }) {
+  const progress = getCosplayProgressPercent(cosplay);
+  const imageSrc = getCosplayDisplayImage(cosplay.characterArt, cosplay.image);
+  const artPosition = cosplay.characterArtPosition ?? "center top";
+  const boardHref = `/roster/${cosplay.id}`;
+
+  return (
+    <article className="cosplan-project-card flex h-full min-h-[280px] flex-col">
+      <Link
+        href={boardHref}
+        className="cosplan-focus-ring group/card flex min-h-0 flex-1 flex-col transition-colors focus-visible:rounded-t-3xl"
+      >
+        <div className="relative h-40 shrink-0 overflow-hidden bg-gradient-to-b from-closet-blush/40 via-white to-closet-peach/10 sm:h-44">
+          <RosterImageSlot
+            src={imageSrc}
+            alt={cosplay.character}
+            emptyLabel={cosplay.character}
+            className="object-contain transition-transform duration-500 group-hover/card:scale-[1.03]"
+            objectPosition={artPosition}
+            sizes="(max-width: 640px) 82vw, (max-width: 1024px) 45vw, 280px"
+          />
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-closet-brown/80 via-closet-brown/35 to-transparent pt-10" />
+          <div className="absolute inset-x-0 bottom-0 p-3">
+            <h3 className="font-sans text-lg font-bold text-white">{cosplay.character}</h3>
+            <span className="mt-1 inline-flex rounded-full bg-white/20 px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+              {categoryTag(cosplay.series)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col p-4">
+          <div className="mt-auto">
+            <div className="mb-1.5 flex items-center justify-between text-[0.65rem] font-semibold text-closet-brown">
+              <span>Progress</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="closet-progress-track h-1.5">
+              <div className="closet-progress-fill" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        </div>
+      </Link>
+
+      <div className="flex items-center justify-end gap-1 border-t border-closet-pink/30 px-3 py-2.5">
+        <CardAction href={boardHref} label={`Open ${cosplay.character} board`}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </CardAction>
+        <CardAction href="#focus" label={`View ${cosplay.character} build journal`}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        </CardAction>
+        <CardAction href="/roster" label="View full roster">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h.01M12 12h.01M19 12h.01" />
+          </svg>
+        </CardAction>
+      </div>
+    </article>
+  );
+}
+
 export default function ProjectGrid({ cosplays }: { cosplays: Cosplay[] }) {
   const projects = getDashboardProjects(cosplays);
 
-  if (!projects.length) return null;
-
   return (
-    <section id="projects" className="cosplan-panel animate-fade-up overflow-hidden [animation-delay:200ms]">
+    <section
+      id="projects"
+      className="cosplan-panel col-span-12 flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden animate-fade-up [animation-delay:200ms] lg:col-span-9"
+    >
       <div className="cosplan-panel-header justify-between">
-        <h2 className="font-sans text-base font-bold text-closet-brown sm:text-lg">
-          Featured Roster
-        </h2>
+        <h2 className="font-sans text-base font-bold text-closet-brown sm:text-lg">Featured Roster</h2>
         <Link
           href="/roster"
-          className="text-sm font-semibold text-closet-rose transition-colors hover:text-closet-mauve"
+          className="cosplan-focus-ring text-sm font-semibold text-closet-rose transition-colors hover:text-closet-mauve"
         >
           View all →
         </Link>
       </div>
 
-      <div className="animate-stagger grid gap-3 p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-3">
-        {projects.map((cosplay) => {
-          const progress = getCosplayProgressPercent(cosplay);
-          const categories = resolveCategories(cosplay.progress);
-
-          return (
-            <Link
-              key={cosplay.id}
-              href={`/roster/${cosplay.id}`}
-              className="cosplan-project-card group"
-            >
-              <div className="relative h-36 overflow-hidden sm:h-40">
-                <RosterImageSlot
-                  src={getCosplayDisplayImage(cosplay.characterArt, cosplay.image)}
-                  alt={cosplay.character}
-                  emptyLabel={cosplay.character}
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="(max-width: 640px) 100vw, 33vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-closet-brown/75 via-closet-brown/15 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-3">
-                  <h3 className="font-sans text-lg font-bold text-white">{cosplay.character}</h3>
-                  <span className="mt-1 inline-flex rounded-full bg-white/20 px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
-                    {categoryTag(cosplay.series)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3 p-3">
-                <div>
-                  <div className="mb-1 flex justify-between text-[0.65rem] font-semibold text-closet-brown">
-                    <span>Progress</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="closet-progress-track h-1.5">
-                    <div className="closet-progress-fill" style={{ width: `${progress}%` }} />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 border-t border-closet-pink/30 pt-2.5">
-                  {categories.map((item) => (
-                    <div key={item.label} className="flex flex-col items-center gap-1 text-closet-brown-light">
-                      <span className="text-closet-rose">
-                        {CATEGORY_ICONS[item.label] ?? CATEGORY_ICONS.Accessories}
-                      </span>
-                      <ProgressDots percent={item.percent} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+      {projects.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
+          <p className="font-sans text-lg font-bold text-closet-brown">No featured builds yet</p>
+          <p className="mt-2 max-w-sm text-sm text-closet-brown-light">
+            Active in-progress projects will appear here once you add them to the roster.
+          </p>
+          <Link href="/roster" className="cosplan-focus-ring mt-4 text-sm font-semibold text-closet-rose hover:text-closet-mauve">
+            Browse roster →
+          </Link>
+        </div>
+      ) : (
+        <div className="animate-stagger cosplan-roster-scroll flex-1 p-4 sm:p-5">
+          {projects.map((cosplay) => (
+            <RosterCard key={cosplay.id} cosplay={cosplay} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

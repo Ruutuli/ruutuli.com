@@ -22,9 +22,12 @@ export default function DashboardWelcome(_props: DashboardWelcomeProps) {
           {siteConfig.tagline}
         </p>
         <h1 className="mt-2.5 font-display text-4xl font-bold leading-[1.1] tracking-tight text-closet-brown sm:text-5xl lg:text-[3.1rem]">
-          {siteConfig.name}
-          <span className="animate-sparkle text-closet-rose">.</span>
+          {siteConfig.displayName}
         </h1>
+
+        <p className="mx-auto mt-3 max-w-lg text-sm font-medium leading-relaxed text-closet-brown sm:text-base lg:mx-0">
+          {siteConfig.roles}
+        </p>
 
         <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-closet-brown-light sm:text-lg lg:mx-0">
           {siteConfig.bio}

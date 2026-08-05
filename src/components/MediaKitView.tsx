@@ -7,8 +7,10 @@ import SectionHeading from "@/components/SectionHeading";
 const collabTypes = [
   "Convention panels, meetups, and guest appearances",
   "Brand features, unboxings, and product spotlights",
-  "Event coverage and cosplay content",
+  "Sponsored streams and variety content",
+  "Event coverage — cosplay, gaming, and con life",
   "Photoshoots and styled character work",
+  "Live2D rigging and VTuber-related projects",
 ];
 
 function SocialLink({ href, label }: { href: string; label: string }) {
@@ -42,10 +44,11 @@ export default function MediaKitView() {
             <h2 className="font-sans text-xl font-bold text-closet-brown">About</h2>
           </div>
           <div className="closet-panel-body space-y-4">
+            <p className="text-base font-medium leading-relaxed text-closet-brown">{siteConfig.roles}</p>
             <p className="text-base leading-relaxed text-closet-brown-light">{siteConfig.bio}</p>
             <p className="text-base leading-relaxed text-closet-brown-light">
-              I build cosplay, document the chaos, and show up at cons. This site is my portfolio — roster,
-              WIPs, calendar, the whole mess.
+              Cosplay builds, streams, art, rigging — this site is where I stash the portfolio stuff. Roster,
+              WIPs, calendar, all of it.
             </p>
           </div>
         </section>
@@ -56,10 +59,19 @@ export default function MediaKitView() {
           </div>
           <div className="closet-panel-body space-y-4">
             <p className="text-sm text-closet-brown-light">
-              Best place to reach me is Instagram. DMs are open for collab inquiries.
+              Email is best for collab inquiries. DMs work too if that&apos;s easier.
             </p>
-            <div className="flex flex-wrap gap-3">
+            {siteConfig.contactEmail && (
+              <a
+                href={`mailto:${siteConfig.contactEmail}`}
+                className="inline-flex text-base font-semibold text-closet-rose underline decoration-closet-pink/60 underline-offset-4 transition-colors hover:text-closet-mauve"
+              >
+                {siteConfig.contactEmail}
+              </a>
+            )}
+            <div className="flex flex-wrap gap-3 pt-1">
               <SocialLink href={siteConfig.socials.instagram} label="Instagram" />
+              <SocialLink href={siteConfig.socials.twitch} label="Twitch" />
               <SocialLink href={siteConfig.socials.tiktok} label="TikTok" />
               <SocialLink href={siteConfig.socials.twitter} label="X" />
             </div>

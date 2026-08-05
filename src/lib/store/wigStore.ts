@@ -22,7 +22,7 @@ export async function getWigs(): Promise<Wig[]> {
 }
 
 export async function saveWigs(wigs: Wig[]): Promise<Wig[]> {
-  const collection = await getCollection(COLLECTIONS.wigs);
+  const collection = await getCollection<Wig & { _id: string }>(COLLECTIONS.wigs);
   const ids = wigs.map((w) => w.id);
 
   if (ids.length > 0) {
@@ -40,7 +40,7 @@ export async function saveWigs(wigs: Wig[]): Promise<Wig[]> {
 }
 
 export async function createWig(input: Omit<Wig, "id"> & { id?: string }): Promise<Wig> {
-  const collection = await getCollection(COLLECTIONS.wigs);
+  const collection = await getCollection<Wig & { _id: string }>(COLLECTIONS.wigs);
   let id = input.id?.trim() || slugifyId(input.brand, input.style, input.character ?? "wig", input.color);
   const existing = await collection.findOne({ _id: id });
   if (existing) id = `${id}-${Date.now()}`;
@@ -61,7 +61,7 @@ export async function updateWig(id: string, patch: Partial<Wig>): Promise<Wig | 
 }
 
 export async function deleteWig(id: string): Promise<boolean> {
-  const collection = await getCollection(COLLECTIONS.wigs);
+  const collection = await getCollection<Wig & { _id: string }>(COLLECTIONS.wigs);
   const result = await collection.deleteOne({ _id: id });
   return result.deletedCount === 1;
 }

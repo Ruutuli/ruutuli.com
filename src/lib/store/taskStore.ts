@@ -46,7 +46,7 @@ export async function getTasksByEvent(eventId: string): Promise<BuildTask[]> {
 }
 
 export async function saveTasks(tasks: BuildTask[]): Promise<BuildTask[]> {
-  const collection = await getCollection(COLLECTIONS.tasks);
+  const collection = await getCollection<BuildTask & { _id: string }>(COLLECTIONS.tasks);
   const ids = tasks.map((t) => t.id);
 
   if (ids.length > 0) {
@@ -73,7 +73,7 @@ export async function updateTask(id: string, patch: Partial<BuildTask>): Promise
 }
 
 export async function createTask(input: Omit<BuildTask, "id"> & { id?: string }): Promise<BuildTask> {
-  const collection = await getCollection(COLLECTIONS.tasks);
+  const collection = await getCollection<BuildTask & { _id: string }>(COLLECTIONS.tasks);
   const id = input.id?.trim() || `task-${Date.now()}`;
   const task: BuildTask = { ...input, id };
   await collection.insertOne(toDoc(task));
@@ -81,13 +81,13 @@ export async function createTask(input: Omit<BuildTask, "id"> & { id?: string })
 }
 
 export async function deleteTask(id: string): Promise<boolean> {
-  const collection = await getCollection(COLLECTIONS.tasks);
+  const collection = await getCollection<BuildTask & { _id: string }>(COLLECTIONS.tasks);
   const result = await collection.deleteOne({ _id: id });
   return result.deletedCount === 1;
 }
 
 export async function deleteTasksByEventId(eventId: string): Promise<number> {
-  const collection = await getCollection(COLLECTIONS.tasks);
+  const collection = await getCollection<BuildTask & { _id: string }>(COLLECTIONS.tasks);
   const result = await collection.deleteMany({ eventId });
   return result.deletedCount;
 }

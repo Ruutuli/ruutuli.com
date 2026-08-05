@@ -8,7 +8,9 @@ export type SiteConfig = SiteSettings & {
 
 export function mergeSiteConfig(settings: SiteSettings): SiteConfig {
   return {
+    ...defaultSiteSettings,
     ...settings,
+    socials: { ...defaultSiteSettings.socials, ...settings.socials },
     assets: siteAssets,
   };
 }

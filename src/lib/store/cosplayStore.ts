@@ -83,7 +83,7 @@ export async function getCosplays(): Promise<Cosplay[]> {
 }
 
 export async function saveCosplays(cosplays: Cosplay[]): Promise<Cosplay[]> {
-  const collection = await getCollection(COLLECTIONS.cosplays);
+  const collection = await getCollection<Cosplay & { _id: string }>(COLLECTIONS.cosplays);
   const ids = cosplays.map((c) => c.id);
 
   if (ids.length > 0) {
@@ -108,7 +108,7 @@ export async function getCosplayById(id: string): Promise<Cosplay | undefined> {
 }
 
 export async function createCosplay(input: Omit<Cosplay, "id"> & { id?: string }): Promise<Cosplay> {
-  const collection = await getCollection(COLLECTIONS.cosplays);
+  const collection = await getCollection<Cosplay & { _id: string }>(COLLECTIONS.cosplays);
   let id = input.id?.trim() || slugifyId(input.series, input.character, input.outfit ?? "default");
   const existing = await collection.findOne({ _id: id });
   if (existing) {
@@ -150,7 +150,7 @@ export async function deleteCosplay(id: string): Promise<boolean> {
   const trimmed = id?.trim();
   if (!trimmed || trimmed === "undefined" || trimmed === "null") return false;
 
-  const collection = await getCollection(COLLECTIONS.cosplays);
+  const collection = await getCollection<Cosplay & { _id: string }>(COLLECTIONS.cosplays);
   const byMongoId = await collection.deleteOne({ _id: trimmed });
   if (byMongoId.deletedCount === 1) return true;
 

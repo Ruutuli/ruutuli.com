@@ -22,8 +22,12 @@ export async function getSettings(): Promise<SiteSettings> {
 }
 
 export async function saveSettings(settings: SiteSettings): Promise<SiteSettings> {
-  const collection = await getCollection(COLLECTIONS.settings);
-  await collection.replaceOne({ _id: SETTINGS_ID }, { _id: SETTINGS_ID, ...settings }, { upsert: true });
+  const collection = await getCollection<SettingsDoc>(COLLECTIONS.settings);
+  await collection.replaceOne(
+    { _id: SETTINGS_ID },
+    { _id: SETTINGS_ID, ...settings } as SettingsDoc,
+    { upsert: true },
+  );
   return settings;
 }
 
