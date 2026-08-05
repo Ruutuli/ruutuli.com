@@ -2,11 +2,29 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import RosterImageSlot from "@/components/RosterImageSlot";
+import { buildImageLoadAttempts } from "@/lib/utils/googleDriveImage";
 import { GalleryBannerPhoto } from "@/types/gallery";
 
 const SLOT_COUNT = 5;
 /** Time between each panel swap — calm, even rhythm */
 const SWAP_MS = 5500;
+const FADE_MS = 900;
+
+function characterKey(photo: GalleryBannerPhoto): string {
+  return photo.cosplayId?.trim() || photo.src;
+}
+
+function pickOnePerCharacter(pool: GalleryBannerPhoto[]): GalleryBannerPhoto[] {
+  const seen = new Set<string>();
+  const result: GalleryBannerPhoto[] = [];
+  for (const photo of pool) {
+    const key = characterKey(photo);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(photo);
+  }
+  return result;
+}
 
 function pickReplacement(
   pool: GalleryBannerPhoto[],
@@ -14,29 +32,45 @@ function pickReplacement(
   slotIndex: number,
 ): GalleryBannerPhoto {
   const current = slots[slotIndex];
-  const visibleElsewhere = new Set(
-    slots.map((photo, index) => (index === slotIndex ? null : photo.src)).filter(Boolean),
+  const currentKey = characterKey(current);
+  const visibleCharacters = new Set(
+    slots
+      .map((photo, index) => (index === slotIndex ? null : characterKey(photo)))
+      .filter((key): key is string => Boolean(key)),
   );
-  const candidates = pool.filter((photo) => photo.src !== current.src && !visibleElsewhere.has(photo.src));
+
+  const candidates = pool.filter(
+    (photo) => characterKey(photo) !== currentKey && !visibleCharacters.has(characterKey(photo)),
+  );
   const pickFrom =
-    candidates.length > 0 ? candidates : pool.filter((photo) => photo.src !== current.src);
+    candidates.length > 0
+      ? candidates
+      : pool.filter((photo) => characterKey(photo) !== currentKey);
   if (pickFrom.length === 0) return current;
   return pickFrom[Math.floor(Math.random() * pickFrom.length)];
 }
 
-/** Stable order for SSR + hydration; random shuffle runs in useEffect after mount. */
+/** Stable, one-character-per-slot order for SSR + hydration. */
 function initialSlots(pool: GalleryBannerPhoto[], count: number): GalleryBannerPhoto[] {
-  if (pool.length === 0) return [];
-  return Array.from({ length: count }, (_, index) => pool[index % pool.length]);
+  const unique = pickOnePerCharacter(pool);
+  if (unique.length === 0) return [];
+  return Array.from({ length: count }, (_, index) => unique[index % unique.length]);
 }
 
-function randomSlots(pool: GalleryBannerPhoto[], count: number): GalleryBannerPhoto[] {
-  if (pool.length === 0) return [];
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return Array.from({ length: count }, (_, index) => shuffled[index % shuffled.length]);
+function preloadImage(src: string): Promise<void> {
+  const attempts = buildImageLoadAttempts(src);
+  const url = attempts[0];
+  if (!url) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = url;
+  });
 }
 
-function BannerImage({ photo }: { photo: GalleryBannerPhoto }) {
+function BannerImage({ photo, priority }: { photo: GalleryBannerPhoto; priority?: boolean }) {
   return (
     <RosterImageSlot
       src={photo.src}
@@ -44,51 +78,68 @@ function BannerImage({ photo }: { photo: GalleryBannerPhoto }) {
       emptyLabel={photo.alt}
       className="object-cover object-top"
       sizes="20vw"
+      priority={priority}
     />
   );
 }
 
 function BannerSlot({ image }: { image: GalleryBannerPhoto }) {
-  const [visible, setVisible] = useState(image);
+  const [displayed, setDisplayed] = useState(image);
   const [incoming, setIncoming] = useState<GalleryBannerPhoto | null>(null);
-  const [fadeIn, setFadeIn] = useState(false);
+  const [crossfading, setCrossfading] = useState(false);
 
   useEffect(() => {
-    if (image.src === visible.src) return;
+    if (image.src === displayed.src) return;
 
-    setIncoming(image);
-    setFadeIn(false);
+    let cancelled = false;
 
-    const frame = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setFadeIn(true));
+    preloadImage(image.src).then(() => {
+      if (cancelled || image.src === displayed.src) return;
+
+      setIncoming(image);
+      setCrossfading(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!cancelled) setCrossfading(true);
+        });
+      });
     });
 
-    return () => cancelAnimationFrame(frame);
-  }, [image, visible.src]);
+    return () => {
+      cancelled = true;
+    };
+  }, [image, displayed.src]);
 
   const handleTransitionEnd = useCallback(() => {
-    if (!incoming || !fadeIn) return;
-    setVisible(incoming);
+    if (!crossfading || !incoming) return;
+    setDisplayed(incoming);
     setIncoming(null);
-    setFadeIn(false);
-  }, [incoming, fadeIn]);
+    setCrossfading(false);
+  }, [crossfading, incoming]);
 
   return (
     <div className="mediakit-banner-slot relative h-full min-w-0 overflow-hidden bg-closet-blush/15">
-      <div className="absolute inset-0" aria-hidden={!!incoming && fadeIn}>
-        <BannerImage photo={visible} />
+      <div
+        className={`mediakit-banner-layer absolute inset-0 transition-opacity ease-in-out ${
+          crossfading ? "opacity-0" : "opacity-100"
+        }`}
+        style={{ transitionDuration: `${FADE_MS}ms` }}
+        aria-hidden={crossfading}
+      >
+        <BannerImage photo={displayed} priority />
       </div>
       {incoming && (
         <div
-          className={`absolute inset-0 transition-opacity duration-[1600ms] ease-in-out ${
-            fadeIn ? "opacity-100" : "opacity-0"
+          className={`mediakit-banner-layer absolute inset-0 transition-opacity ease-in-out ${
+            crossfading ? "opacity-100" : "opacity-0"
           }`}
+          style={{ transitionDuration: `${FADE_MS}ms` }}
           onTransitionEnd={(event) => {
-            if (event.propertyName !== "opacity" || !fadeIn) return;
+            if (event.propertyName !== "opacity" || !crossfading) return;
             handleTransitionEnd();
           }}
         >
-          <BannerImage photo={incoming} />
+          <BannerImage photo={incoming} priority />
         </div>
       )}
     </div>
@@ -104,12 +155,6 @@ export default function MediaKitPhotoBanner({ photos }: { photos: GalleryBannerP
   useEffect(() => {
     setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
-
-  useEffect(() => {
-    if (pool.length === 0) return;
-    setSlots(randomSlots(pool, SLOT_COUNT));
-    slotCursor.current = 0;
-  }, [pool]);
 
   useEffect(() => {
     if (reducedMotion || pool.length <= 1) return;

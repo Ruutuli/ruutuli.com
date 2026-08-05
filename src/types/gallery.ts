@@ -58,6 +58,8 @@ export interface GalleryPhotoCredit {
 export interface GalleryBannerPhoto {
   src: string;
   alt: string;
+  /** Primary cosplay link — used to avoid showing the same character in adjacent slots. */
+  cosplayId?: string;
 }
 
 export interface GalleryListFilters {

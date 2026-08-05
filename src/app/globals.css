@@ -582,6 +582,12 @@ input[type="search"]::-webkit-search-results-decoration {
 
 .mediakit-banner-slot {
   @apply border-r border-closet-pink/25 last:border-r-0;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.mediakit-banner-layer {
+  will-change: opacity;
 }
 
 @media (max-width: 639px) {

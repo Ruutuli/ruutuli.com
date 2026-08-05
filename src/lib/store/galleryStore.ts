@@ -591,6 +591,7 @@ export async function getPublishedGalleryPhotosForBanner(): Promise<GalleryBanne
       alt: item.photographer
         ? `Cosplay photo by ${item.photographer}`
         : item.name?.trim() || "Cosplay gallery photo",
+      cosplayId: item.cosplayIds[0] ?? "",
     }));
 }
 
