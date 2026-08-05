@@ -6,7 +6,8 @@ import { ConEvent } from "@/types/event";
 import { GalleryItem, GalleryPublishedFilter, GalleryImageTypeFilter, GalleryImageType, GallerySection, GallerySectionFilter, GallerySortBy, GALLERY_SECTION_LABELS, GalleryListResult } from "@/types/gallery";
 import { getGalleryAdminImageSrc, ADMIN_GALLERY_THUMB_WIDTH } from "@/lib/utils/googleDriveImage";
 import { GALLERY_DEFAULT_PAGE_SIZE, GALLERY_PAGE_SIZES } from "@/lib/gallery/constants";
-import { filterCosplaysByQuery, cosplayPickerSubtitle } from "@/lib/gallery/suggestCosplayFromFilename";
+import { filterCosplaysByQuery, cosplayPickerSubtitle, suggestCosplaysFromFilenames, autoSelectCosplayIdsFromFilenames } from "@/lib/gallery/suggestCosplayFromFilename";
+import { suggestMetadataFromFilenames } from "@/lib/gallery/parseFilenameTags";
 import AdminGalleryEditModal from "./AdminGalleryEditModal";
 import { IconTrash } from "./icons";
 import {
@@ -100,6 +101,7 @@ export default function AdminGalleryManager({
   const [bulkTagConvention, setBulkTagConvention] = useState("");
   const [bulkTagPhotographer, setBulkTagPhotographer] = useState("");
   const [bulkTagGallerySection, setBulkTagGallerySection] = useState<"" | GallerySection>("");
+  const [bulkTagShowAllCosplays, setBulkTagShowAllCosplays] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [bulkDeleteAllMatching, setBulkDeleteAllMatching] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -295,10 +297,31 @@ export default function AdminGalleryManager({
     ],
   );
 
-  const bulkTagCosplayOptions = useMemo(
-    () => filterCosplaysByQuery(uniqueCosplays, bulkTagQuery),
-    [uniqueCosplays, bulkTagQuery],
+  const bulkTagFilenames = useMemo(() => {
+    if (!showBulkTag) return [] as string[];
+    if (bulkTagAllMatching) return items.map((item) => item.name);
+    return items.filter((item) => selectedIds.has(item.id)).map((item) => item.name);
+  }, [showBulkTag, bulkTagAllMatching, items, selectedIds]);
+
+  const bulkTagSuggestedCosplays = useMemo(
+    () =>
+      suggestCosplaysFromFilenames(bulkTagFilenames, uniqueCosplays).filter(
+        (cosplay) => !bulkTagCosplayIds.includes(cosplay.id),
+      ),
+    [bulkTagFilenames, uniqueCosplays, bulkTagCosplayIds],
   );
+
+  const bulkTagSelectedCosplays = useMemo(
+    () => bulkTagCosplayIds.map((id) => cosplayMap.get(id)).filter(Boolean) as Cosplay[],
+    [bulkTagCosplayIds, cosplayMap],
+  );
+
+  const bulkTagBrowseCosplays = useMemo(() => {
+    if (!bulkTagShowAllCosplays && !bulkTagQuery.trim()) return [] as Cosplay[];
+    return filterCosplaysByQuery(uniqueCosplays, bulkTagQuery).filter(
+      (cosplay) => !bulkTagCosplayIds.includes(cosplay.id),
+    );
+  }, [uniqueCosplays, bulkTagQuery, bulkTagShowAllCosplays, bulkTagCosplayIds]);
 
   function mergeVisibleGalleryItem(
     prev: GalleryItem[],
@@ -364,6 +387,7 @@ export default function AdminGalleryManager({
     setBulkTagConvention("");
     setBulkTagPhotographer("");
     setBulkTagGallerySection("");
+    setBulkTagShowAllCosplays(false);
     setShowBulkDelete(false);
     setBulkDeleteAllMatching(false);
   }
@@ -382,12 +406,19 @@ export default function AdminGalleryManager({
   }
 
   function openBulkTag(allMatching: boolean) {
+    const filenames = allMatching
+      ? items.map((item) => item.name)
+      : items.filter((item) => selectedIds.has(item.id)).map((item) => item.name);
+    const meta = suggestMetadataFromFilenames(filenames, conventionOptions);
+    const autoCosplayIds = autoSelectCosplayIdsFromFilenames(filenames, uniqueCosplays);
+
     setBulkTagAllMatching(allMatching);
-    setBulkTagCosplayIds([]);
+    setBulkTagCosplayIds(autoCosplayIds);
     setBulkTagQuery("");
-    setBulkTagConvention("");
-    setBulkTagPhotographer("");
+    setBulkTagConvention(meta.convention ?? "");
+    setBulkTagPhotographer(meta.photographer ?? "");
     setBulkTagGallerySection("");
+    setBulkTagShowAllCosplays(false);
     setShowBulkTag(true);
   }
 
@@ -1504,42 +1535,87 @@ export default function AdminGalleryManager({
                 ? `Link all ${total.toLocaleString()} photos matching your current filters to the selected character(s). Existing links are kept.`
                 : `Link ${selectedIds.size} selected photo${selectedIds.size === 1 ? "" : "s"} to the chosen character(s). Existing links are kept.`}
             </p>
+
+            {bulkTagSuggestedCosplays.length > 0 && !bulkTagQuery.trim() && (
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-closet-brown-light">
+                  Suggested from filename{bulkTagFilenames.length === 1 ? "" : "s"}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {bulkTagSuggestedCosplays.slice(0, 6).map((cosplay) => (
+                    <button
+                      key={cosplay.id}
+                      type="button"
+                      onClick={() => toggleBulkTagCosplay(cosplay.id)}
+                      className="rounded-xl border border-closet-rose/40 bg-white px-3 py-2 text-left text-sm font-semibold text-closet-brown shadow-sm transition hover:border-closet-rose hover:bg-closet-blush/30"
+                    >
+                      {cosplay.character}
+                      <span className="block text-[10px] font-medium text-closet-brown-light">
+                        {cosplayPickerSubtitle(cosplay)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {bulkTagSelectedCosplays.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-closet-brown-light">Selected</p>
+                <div className="flex flex-wrap gap-2">
+                  {bulkTagSelectedCosplays.map((cosplay) => (
+                    <button
+                      key={cosplay.id}
+                      type="button"
+                      onClick={() => toggleBulkTagCosplay(cosplay.id)}
+                      className="flex items-center gap-2 rounded-xl border border-closet-rose/50 bg-closet-rose/10 px-2.5 py-1.5 text-left text-sm font-semibold text-closet-brown"
+                    >
+                      <span className="text-closet-rose">✓</span>
+                      {cosplay.character}
+                      <span className="font-normal text-closet-brown-light">· {cosplayPickerSubtitle(cosplay)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <AdminSearch
               value={bulkTagQuery}
-              onChange={setBulkTagQuery}
+              onChange={(value) => {
+                setBulkTagQuery(value);
+                if (value.trim()) setBulkTagShowAllCosplays(true);
+              }}
               placeholder="Search characters…"
             />
+
+            {!bulkTagShowAllCosplays && !bulkTagQuery.trim() && bulkTagSuggestedCosplays.length === 0 && (
+              <AdminButton variant="secondary" onClick={() => setBulkTagShowAllCosplays(true)} className="w-full text-sm">
+                Browse roster
+              </AdminButton>
+            )}
+
+            {(bulkTagShowAllCosplays || bulkTagQuery.trim()) && (
             <div className="max-h-64 space-y-1 overflow-y-auto rounded-xl border border-closet-pink/50 bg-closet-blush/20 p-2">
-              {bulkTagCosplayOptions.length === 0 ? (
+              {bulkTagBrowseCosplays.length === 0 ? (
                 <p className="px-2 py-4 text-center text-sm text-closet-brown-light">No matches</p>
               ) : (
-                bulkTagCosplayOptions.slice(0, 50).map((c) => {
-                  const active = bulkTagCosplayIds.includes(c.id);
-                  return (
+                bulkTagBrowseCosplays.slice(0, 50).map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => toggleBulkTagCosplay(c.id)}
-                      className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition ${
-                        active ? "bg-closet-rose/15 ring-1 ring-closet-rose/40" : "hover:bg-white/70"
-                      }`}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition hover:bg-white/70"
                     >
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[10px] font-bold ${
-                          active ? "border-closet-rose bg-closet-rose text-white" : "border-closet-pink bg-white text-transparent"
-                        }`}
-                      >
-                        ✓
-                      </span>
                       <span className="min-w-0 flex-1 text-sm font-semibold text-closet-brown">
                         {c.character}
                         <span className="font-normal text-closet-brown-light"> · {cosplayPickerSubtitle(c)}</span>
                       </span>
+                      <span className="shrink-0 text-xs font-bold text-closet-rose">+ Add</span>
                     </button>
-                  );
-                })
+                  ))
               )}
             </div>
+            )}
             <div className="grid gap-3 sm:grid-cols-2">
               <AdminSelect
                 label="Gallery section"

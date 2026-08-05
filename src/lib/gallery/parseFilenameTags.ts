@@ -182,3 +182,39 @@ function looksLikePhotographer(value: string): boolean {
 function looksLikeConvention(value: string): boolean {
   return /\b(con|fest|expo|magfest|otakon|pax|katsu)\b/i.test(value);
 }
+
+/** Pick the most common convention / photographer across several filenames (bulk tag). */
+export function suggestMetadataFromFilenames(
+  filenames: string[],
+  knownConventions: string[] = [],
+): { convention?: string; photographer?: string } {
+  const conventions = new Map<string, number>();
+  const photographers = new Map<string, number>();
+
+  for (const filename of filenames) {
+    const parsed = parseGalleryFilenameTags(filename, knownConventions);
+    if (parsed.convention) {
+      conventions.set(parsed.convention, (conventions.get(parsed.convention) ?? 0) + 1);
+    }
+    if (parsed.photographer) {
+      photographers.set(parsed.photographer, (photographers.get(parsed.photographer) ?? 0) + 1);
+    }
+  }
+
+  const pickBest = (counts: Map<string, number>): string | undefined => {
+    let best: string | undefined;
+    let bestCount = 0;
+    for (const [value, count] of counts) {
+      if (count > bestCount) {
+        best = value;
+        bestCount = count;
+      }
+    }
+    return best;
+  };
+
+  return {
+    convention: pickBest(conventions),
+    photographer: pickBest(photographers),
+  };
+}

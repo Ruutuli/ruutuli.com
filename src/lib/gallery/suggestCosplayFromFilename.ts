@@ -77,6 +77,36 @@ export function suggestCosplaysFromFilename(filename: string, cosplays: Cosplay[
     .map((row) => row.cosplay);
 }
 
+/** Rank cosplays that likely match any of several Drive filenames (bulk tag). */
+export function suggestCosplaysFromFilenames(filenames: string[], cosplays: Cosplay[]): Cosplay[] {
+  const scoreById = new Map<string, number>();
+  for (const filename of filenames) {
+    const matches = suggestCosplaysFromFilename(filename, cosplays);
+    matches.forEach((cosplay, index) => {
+      const add = Math.max(1000 - index * 80, 50);
+      scoreById.set(cosplay.id, (scoreById.get(cosplay.id) ?? 0) + add);
+    });
+  }
+
+  return [...scoreById.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([id]) => cosplays.find((c) => c.id === id))
+    .filter((c): c is Cosplay => !!c);
+}
+
+/** When every filename's top match is the same cosplay, pre-select it for bulk tag. */
+export function autoSelectCosplayIdsFromFilenames(filenames: string[], cosplays: Cosplay[]): string[] {
+  if (filenames.length === 0) return [];
+
+  const topIds = filenames
+    .map((filename) => suggestCosplaysFromFilename(filename, cosplays)[0]?.id)
+    .filter((id): id is string => !!id);
+
+  if (topIds.length === 0) return [];
+  const first = topIds[0]!;
+  return topIds.every((id) => id === first) ? [first] : [];
+}
+
 export function filterCosplaysByQuery(cosplays: Cosplay[], query: string): Cosplay[] {
   const q = query.trim().toLowerCase();
   if (!q) return cosplays;
