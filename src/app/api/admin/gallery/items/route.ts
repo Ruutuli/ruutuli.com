@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
     sortBy: sortBy === "name" ? "name" : undefined,
     page: Number(params.get("page")) || 1,
     limit: Number(params.get("limit")) || 48,
+    includeStats: params.get("includeStats") !== "0",
+    includeFacets: params.get("includeFacets") !== "0",
   });
 
   return NextResponse.json(result);

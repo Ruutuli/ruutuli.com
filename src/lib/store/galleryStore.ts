@@ -309,13 +309,15 @@ export async function listGalleryItems(filters: GalleryListFilters = {}): Promis
   const limit = Math.min(Math.max(filters.limit ?? 48, 1), 96);
   const page = Math.max(filters.page ?? 1, 1);
   const start = (page - 1) * limit;
+  const includeStats = filters.includeStats !== false;
+  const includeFacets = filters.includeFacets !== false;
 
   const [docs, total, stats, vocabulary, folders] = await Promise.all([
     collection.find(mongoFilter).sort(sort).skip(start).limit(limit).toArray(),
     collection.countDocuments(mongoFilter),
-    getGalleryStats(),
-    getGalleryVocabulary(),
-    getGalleryFolderFacets(),
+    includeStats ? getGalleryStats() : Promise.resolve(undefined),
+    includeFacets ? getGalleryVocabulary() : Promise.resolve(undefined),
+    includeFacets ? getGalleryFolderFacetsFromDb() : Promise.resolve(undefined),
   ]);
 
   return {
@@ -323,8 +325,10 @@ export async function listGalleryItems(filters: GalleryListFilters = {}): Promis
     total,
     page,
     limit,
-    stats,
-    facets: { conventions: vocabulary.conventions, photographers: vocabulary.photographers, folders },
+    ...(stats ? { stats } : {}),
+    ...(vocabulary && folders
+      ? { facets: { conventions: vocabulary.conventions, photographers: vocabulary.photographers, folders } }
+      : {}),
   };
 }
 

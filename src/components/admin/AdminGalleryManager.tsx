@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Cosplay } from "@/types/cosplay";
 import { ConEvent } from "@/types/event";
-import { GalleryItem, GalleryPublishedFilter, GalleryImageTypeFilter, GalleryImageType, GallerySection, GallerySectionFilter, GallerySortBy, GALLERY_SECTION_LABELS } from "@/types/gallery";
-import { getGalleryAdminImageSrc } from "@/lib/utils/googleDriveImage";
+import { GalleryItem, GalleryPublishedFilter, GalleryImageTypeFilter, GalleryImageType, GallerySection, GallerySectionFilter, GallerySortBy, GALLERY_SECTION_LABELS, GalleryListResult } from "@/types/gallery";
+import { getGalleryAdminImageSrc, ADMIN_GALLERY_THUMB_WIDTH } from "@/lib/utils/googleDriveImage";
 import { GALLERY_DEFAULT_PAGE_SIZE, GALLERY_PAGE_SIZES } from "@/lib/gallery/constants";
 import { filterCosplaysByQuery, cosplayPickerSubtitle } from "@/lib/gallery/suggestCosplayFromFilename";
 import AdminGalleryEditModal from "./AdminGalleryEditModal";
@@ -21,15 +21,6 @@ import {
   AdminStatCard,
   AdminToast,
 } from "./ui";
-
-interface GalleryListResponse {
-  items: GalleryItem[];
-  total: number;
-  page: number;
-  limit: number;
-  stats: { total: number; published: number; unpublished: number; unlinked: number; excluded: number };
-  facets: { conventions: string[]; photographers: string[]; folders: { id: string; name: string }[] };
-}
 
 function parseTags(input: string): string[] {
   return input
@@ -207,7 +198,9 @@ export default function AdminGalleryManager({
     if (!silent) setLoading(true);
 
     let fetchPage = page;
-    if (filterSignature !== filterSignatureRef.current) {
+    const filtersChanged = filterSignature !== filterSignatureRef.current;
+    const includeMeta = filtersChanged || filterSignatureRef.current === "";
+    if (filtersChanged) {
       filterSignatureRef.current = filterSignature;
       fetchPage = 1;
       if (page !== 1) setPage(1);
@@ -232,6 +225,10 @@ export default function AdminGalleryManager({
     if (sortBy !== "folder") params.set("sortBy", sortBy);
     if (imageTypeFilter !== "all") params.set("imageType", imageTypeFilter);
     if (gallerySectionFilter !== "all") params.set("gallerySection", gallerySectionFilter);
+    if (!includeMeta) {
+      params.set("includeStats", "0");
+      params.set("includeFacets", "0");
+    }
 
     try {
       const res = await fetch(`/api/admin/gallery/items?${params}`, { signal: controller.signal });
@@ -244,13 +241,13 @@ export default function AdminGalleryManager({
         return;
       }
 
-      const data = (await res.json()) as GalleryListResponse;
+      const data = (await res.json()) as GalleryListResult;
       if (controller.signal.aborted) return;
 
       setItems(data.items);
       setTotal(data.total);
-      setStats(data.stats);
-      setFacets(data.facets ?? { conventions: [], photographers: [], folders: [] });
+      if (data.stats) setStats(data.stats);
+      if (data.facets) setFacets(data.facets);
       setLoading(false);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -350,7 +347,7 @@ export default function AdminGalleryManager({
     try {
       const res = await fetch("/api/admin/gallery/items?limit=1&page=1");
       if (!res.ok) return;
-      const data = (await res.json()) as GalleryListResponse;
+      const data = (await res.json()) as GalleryListResult;
       if (data.facets) setFacets(data.facets);
     } catch {
       /* ignore */
@@ -1282,7 +1279,7 @@ export default function AdminGalleryManager({
                       <div className="aspect-[3/4] bg-closet-blush/40">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId })}
+                          src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId, width: ADMIN_GALLERY_THUMB_WIDTH })}
                           alt=""
                           className="h-full w-full object-cover"
                           loading="lazy"
@@ -1303,7 +1300,7 @@ export default function AdminGalleryManager({
                     <div className="aspect-[3/4] bg-closet-blush/40">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId })}
+                        src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId, width: ADMIN_GALLERY_THUMB_WIDTH })}
                         alt=""
                         className="h-full w-full object-cover"
                         loading="lazy"
@@ -1456,7 +1453,7 @@ export default function AdminGalleryManager({
             <div className="h-32 w-24 shrink-0 overflow-hidden rounded-xl border border-closet-pink/50 bg-closet-blush/40 shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={getGalleryAdminImageSrc(pendingRemove.viewUrl, { driveFileId: pendingRemove.driveFileId })}
+                src={getGalleryAdminImageSrc(pendingRemove.viewUrl, { driveFileId: pendingRemove.driveFileId, width: ADMIN_GALLERY_THUMB_WIDTH })}
                 alt=""
                 className="h-full w-full object-cover"
               />

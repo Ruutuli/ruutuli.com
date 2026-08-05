@@ -17,6 +17,13 @@ import { logger } from "@/lib/logger";
 
 const PROXY_CACHE_CONTROL = "public, max-age=604800, must-revalidate";
 
+function parseProxyThumbWidth(raw: string | null): number | null {
+  if (!raw?.trim()) return null;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 100) return null;
+  return Math.min(parsed, 1920);
+}
+
 function bufferAsBody(buf: Buffer): BodyInit {
   return new Uint8Array(buf);
 }
@@ -50,6 +57,7 @@ export async function GET(request: NextRequest) {
   const url = rawUrl ? normalizeImageUrl(rawUrl) : null;
   const fromUrl = url ? getGoogleDriveFileId(url) : null;
   const driveFileId = fromUrl ?? sanitizeGoogleDriveFileId(rawFileId);
+  const thumbWidth = parseProxyThumbWidth(searchParams.get("w"));
 
   const MAX_IMAGE_BYTES = getImageProxyMaxBytes();
 
@@ -127,11 +135,57 @@ export async function GET(request: NextRequest) {
   }
 
   const urls = url
-    ? getGoogleDriveImageUrls(url)
-    : getGoogleDriveImageUrls(`https://drive.google.com/file/d/${driveFileId}/view`);
+    ? getGoogleDriveImageUrls(url, thumbWidth ?? 800)
+    : getGoogleDriveImageUrls(`https://drive.google.com/file/d/${driveFileId}/view`, thumbWidth ?? 800);
 
   function serveDriveBuffer(buffer: Buffer): NextResponse | null {
     return serveBuffer(buffer);
+  }
+
+  if (thumbWidth) {
+    const thumb = await fetchDriveFileThumbnailBuffer(driveFileId, MAX_IMAGE_BYTES, thumbWidth);
+    if (thumb) {
+      const served = serveDriveBuffer(thumb.buffer);
+      if (served) return served;
+    }
+
+    for (const imageUrl of urls) {
+      try {
+        const response = await fetch(imageUrl, {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Referer: "https://drive.google.com/",
+            Accept: "image/webp,image/apng,image/*,*/*;q=0.8",
+          },
+          redirect: "follow",
+        });
+
+        if (!response.ok) continue;
+
+        const buffer = await response.arrayBuffer();
+        if (buffer.byteLength <= 100 || buffer.byteLength > MAX_IMAGE_BYTES) continue;
+
+        const contentType = detectImageContentType(buffer);
+        if (!contentType) continue;
+
+        return new NextResponse(buffer, {
+          status: 200,
+          headers: {
+            "Content-Type": contentType,
+            "Cache-Control": PROXY_CACHE_CONTROL,
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      } catch (err) {
+        logger.debug("ImageProxy", "Thumbnail CDN fetch failed", {
+          imageUrl,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    return transparentFallback({ "X-Image-FileId": driveFileId });
   }
 
   const driveApiMedia = await fetchDriveFileMediaBuffer(driveFileId, MAX_IMAGE_BYTES);

@@ -251,7 +251,8 @@ export async function fetchDriveFileMediaBuffer(
 
 export async function fetchDriveFileThumbnailBuffer(
   fileId: string,
-  maxBytes: number
+  maxBytes: number,
+  targetSize = 1920,
 ): Promise<{ buffer: Buffer } | null> {
   let drive: drive_v3.Drive;
   try {
@@ -269,7 +270,8 @@ export async function fetchDriveFileThumbnailBuffer(
     const rawLink = meta.data.thumbnailLink;
     if (!rawLink) return null;
 
-    const thumbnailUrl = rawLink.replace(/=s\d+$/i, "=s1920");
+    const size = Math.min(Math.max(Math.round(targetSize), 100), 1920);
+    const thumbnailUrl = rawLink.replace(/=s\d+$/i, `=s${size}`);
     const res = await fetch(thumbnailUrl, { redirect: "follow" });
     if (!res.ok) return null;
 

@@ -78,6 +78,10 @@ export interface GalleryListFilters {
   sortBy?: GallerySortBy;
   page?: number;
   limit?: number;
+  /** When false, omit stats from the response (e.g. pagination-only refresh). */
+  includeStats?: boolean;
+  /** When false, omit facet lists from the response. */
+  includeFacets?: boolean;
 }
 
 export interface GalleryListResult {
@@ -85,7 +89,7 @@ export interface GalleryListResult {
   total: number;
   page: number;
   limit: number;
-  stats: {
+  stats?: {
     total: number;
     published: number;
     unpublished: number;
@@ -93,7 +97,7 @@ export interface GalleryListResult {
     /** Photos removed from gallery catalog; still on Drive until re-synced. */
     excluded: number;
   };
-  facets: {
+  facets?: {
     conventions: string[];
     photographers: string[];
     folders: { id: string; name: string }[];

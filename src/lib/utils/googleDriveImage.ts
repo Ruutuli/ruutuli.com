@@ -232,6 +232,9 @@ export function getGoogleDriveImageUrls(
   ];
 }
 
+/** Max width for admin gallery grid / Drive picker thumbnails (via proxy ?w=). */
+export const ADMIN_GALLERY_THUMB_WIDTH = 320;
+
 export const IMAGE_PLACEHOLDER_URL = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240" viewBox="0 0 480 240" role="img" aria-label="Image unavailable">' +
     '<rect width="480" height="240" fill="#fce4ec"/>' +
@@ -249,13 +252,23 @@ export function shouldUseUnoptimizedImage(src: string | null | undefined): boole
   return true;
 }
 
-export function getProxyUrl(url: string | null | undefined): string {
+export function getProxyUrl(
+  url: string | null | undefined,
+  options?: { width?: number },
+): string {
   if (!url) return "";
 
   const trimmed = normalizeImageUrl(url);
   const fileId = getGoogleDriveFileId(trimmed);
   if (fileId && isGoogleHostedImageUrl(trimmed)) {
-    return `/api/images/proxy?fileId=${encodeURIComponent(fileId)}&url=${encodeURIComponent(trimmed)}`;
+    const params = new URLSearchParams({
+      fileId,
+      url: trimmed,
+    });
+    if (options?.width) {
+      params.set("w", String(Math.min(Math.max(Math.round(options.width), 100), 1920)));
+    }
+    return `/api/images/proxy?${params.toString()}`;
   }
 
   if (isAllowedExternalImageUrl(trimmed)) {
@@ -315,7 +328,6 @@ export function getGalleryAdminImageSrc(
   url: string | null | undefined,
   options?: { driveFileId?: string | null; width?: number },
 ): string {
-  void options?.width;
   const fileId =
     sanitizeGoogleDriveFileId(options?.driveFileId) ?? getGoogleDriveFileId(normalizeImageUrl(url ?? ""));
   if (fileId) {
@@ -323,9 +335,13 @@ export function getGalleryAdminImageSrc(
       url?.trim() && isGoogleHostedImageUrl(normalizeImageUrl(url))
         ? normalizeImageUrl(url)
         : `https://drive.google.com/file/d/${fileId}/view`;
-    const proxied = getProxyUrl(viewUrl);
+    const proxied = getProxyUrl(viewUrl, { width: options?.width });
     if (proxied.startsWith("/api/images/proxy")) return proxied;
-    return `/api/images/proxy?fileId=${encodeURIComponent(fileId)}`;
+    const params = new URLSearchParams({ fileId });
+    if (options?.width) {
+      params.set("w", String(Math.min(Math.max(Math.round(options.width), 100), 1920)));
+    }
+    return `/api/images/proxy?${params.toString()}`;
   }
 
   if (!url?.trim()) return IMAGE_PLACEHOLDER_URL;

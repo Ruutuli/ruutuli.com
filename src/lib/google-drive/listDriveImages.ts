@@ -2,7 +2,7 @@ import "server-only";
 
 import { listImageFilesInFolder, listFolderContents } from "@/lib/google-drive/galleryDrive";
 import { driveFileViewUrl } from "@/lib/gallery/constants";
-import { getProxyUrl } from "@/lib/utils/googleDriveImage";
+import { ADMIN_GALLERY_THUMB_WIDTH, getGalleryAdminImageSrc } from "@/lib/utils/googleDriveImage";
 
 export interface DriveImageEntry {
   id: string;
@@ -26,7 +26,7 @@ function toImageEntry(file: { id: string; name: string; mimeType: string | null;
     mimeType: file.mimeType ?? "image/jpeg",
     folderId: file.folderId,
     viewUrl,
-    proxyUrl: getProxyUrl(viewUrl),
+    proxyUrl: getGalleryAdminImageSrc(viewUrl, { driveFileId: file.id, width: ADMIN_GALLERY_THUMB_WIDTH }),
   };
 }
 
