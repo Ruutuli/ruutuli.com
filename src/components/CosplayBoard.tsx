@@ -25,7 +25,7 @@ import {
   isCosplayPlaceholderImage,
   resolveCosplayDisplayPhoto,
 } from "@/lib/cosplay/images";
-import GoogleDriveImage from "@/components/GoogleDriveImage";
+import { GoogleDriveImage } from "@/components/GoogleDriveImage";
 import { GalleryPhotoCreditMap } from "@/lib/gallery/photoCredits";
 import CosplayPhotoGallery from "@/components/CosplayPhotoGallery";
 import RosterImageSlot from "@/components/RosterImageSlot";
