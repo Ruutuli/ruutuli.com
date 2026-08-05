@@ -1,14 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import RosterImageSlot from "@/components/RosterImageSlot";
-import { buildImageLoadAttempts } from "@/lib/utils/googleDriveImage";
+import {
+  buildImageLoadAttempts,
+  isTinyPlaceholderImage,
+} from "@/lib/utils/googleDriveImage";
 import { GalleryBannerPhoto } from "@/types/gallery";
 
 const SLOT_COUNT = 5;
 /** Time between each panel swap — calm, even rhythm */
 const SWAP_MS = 5500;
 const FADE_MS = 900;
+
+function isProxyImageUrl(url: string): boolean {
+  return url.includes("/api/images/proxy");
+}
 
 function characterKey(photo: GalleryBannerPhoto): string {
   return photo.cosplayId?.trim() || photo.src;
@@ -57,91 +63,116 @@ function initialSlots(pool: GalleryBannerPhoto[], count: number): GalleryBannerP
   return Array.from({ length: count }, (_, index) => unique[index % unique.length]);
 }
 
-function preloadImage(src: string): Promise<void> {
-  const attempts = buildImageLoadAttempts(src);
-  const url = attempts[0];
-  if (!url) return Promise.resolve();
+function BannerImage({
+  photo,
+  onReady,
+}: {
+  photo: GalleryBannerPhoto;
+  onReady?: () => void;
+}) {
+  const attempts = useMemo(() => buildImageLoadAttempts(photo.src), [photo.src]);
+  const [attemptIndex, setAttemptIndex] = useState(0);
+  const readyRef = useRef(false);
 
-  return new Promise((resolve) => {
-    const img = new window.Image();
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
-    img.src = url;
-  });
-}
+  useEffect(() => {
+    setAttemptIndex(0);
+    readyRef.current = false;
+  }, [photo.src]);
 
-function BannerImage({ photo, priority }: { photo: GalleryBannerPhoto; priority?: boolean }) {
+  const displayUrl = attempts[attemptIndex];
+  if (!displayUrl) return null;
+
+  const markReady = () => {
+    if (readyRef.current) return;
+    readyRef.current = true;
+    onReady?.();
+  };
+
   return (
-    <RosterImageSlot
-      src={photo.src}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={displayUrl}
       alt={photo.alt}
-      emptyLabel={photo.alt}
-      className="object-cover object-top"
-      sizes="20vw"
-      priority={priority}
+      className="absolute inset-0 h-full w-full object-cover object-top"
+      referrerPolicy="no-referrer"
+      decoding="sync"
+      fetchPriority="high"
+      onLoad={(event) => {
+        const img = event.currentTarget;
+        const currentUrl = attempts[attemptIndex] ?? displayUrl;
+        if (
+          isTinyPlaceholderImage(img.naturalWidth, img.naturalHeight) &&
+          isProxyImageUrl(currentUrl) &&
+          attemptIndex + 1 < attempts.length
+        ) {
+          readyRef.current = false;
+          setAttemptIndex((index) => index + 1);
+          return;
+        }
+        markReady();
+      }}
+      onError={() => {
+        if (attemptIndex + 1 < attempts.length) {
+          readyRef.current = false;
+          setAttemptIndex((index) => index + 1);
+          return;
+        }
+        markReady();
+      }}
     />
   );
 }
 
 function BannerSlot({ image }: { image: GalleryBannerPhoto }) {
-  const [displayed, setDisplayed] = useState(image);
-  const [incoming, setIncoming] = useState<GalleryBannerPhoto | null>(null);
-  const [crossfading, setCrossfading] = useState(false);
+  const [layers, setLayers] = useState<[GalleryBannerPhoto, GalleryBannerPhoto]>(() => [image, image]);
+  const [front, setFront] = useState(0);
+  const [fadeIn, setFadeIn] = useState(false);
+  const waitingRef = useRef(false);
+
+  const back = 1 - front;
+  const frontPhoto = layers[front];
 
   useEffect(() => {
-    if (image.src === displayed.src) return;
+    if (image.src === frontPhoto.src) return;
 
-    let cancelled = false;
-
-    preloadImage(image.src).then(() => {
-      if (cancelled || image.src === displayed.src) return;
-
-      setIncoming(image);
-      setCrossfading(false);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (!cancelled) setCrossfading(true);
-        });
-      });
+    waitingRef.current = true;
+    setFadeIn(false);
+    setLayers((prev) => {
+      const next: [GalleryBannerPhoto, GalleryBannerPhoto] = [...prev];
+      next[back] = image;
+      return next;
     });
+  }, [image, frontPhoto.src, back]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [image, displayed.src]);
+  const handleBackReady = useCallback(() => {
+    if (!waitingRef.current) return;
+    waitingRef.current = false;
+    requestAnimationFrame(() => setFadeIn(true));
+  }, []);
 
   const handleTransitionEnd = useCallback(() => {
-    if (!crossfading || !incoming) return;
-    setDisplayed(incoming);
-    setIncoming(null);
-    setCrossfading(false);
-  }, [crossfading, incoming]);
+    if (!fadeIn) return;
+    setFront(back);
+    setFadeIn(false);
+  }, [fadeIn, back]);
 
   return (
     <div className="mediakit-banner-slot relative h-full min-w-0 overflow-hidden bg-closet-blush/15">
+      <div className="absolute inset-0">
+        <BannerImage photo={layers[front]} />
+      </div>
       <div
         className={`mediakit-banner-layer absolute inset-0 transition-opacity ease-in-out ${
-          crossfading ? "opacity-0" : "opacity-100"
+          fadeIn ? "opacity-100" : "opacity-0"
         }`}
         style={{ transitionDuration: `${FADE_MS}ms` }}
-        aria-hidden={crossfading}
+        onTransitionEnd={(event) => {
+          if (event.propertyName !== "opacity" || !fadeIn) return;
+          handleTransitionEnd();
+        }}
       >
-        <BannerImage photo={displayed} priority />
+        <BannerImage photo={layers[back]} onReady={handleBackReady} />
       </div>
-      {incoming && (
-        <div
-          className={`mediakit-banner-layer absolute inset-0 transition-opacity ease-in-out ${
-            crossfading ? "opacity-100" : "opacity-0"
-          }`}
-          style={{ transitionDuration: `${FADE_MS}ms` }}
-          onTransitionEnd={(event) => {
-            if (event.propertyName !== "opacity" || !crossfading) return;
-            handleTransitionEnd();
-          }}
-        >
-          <BannerImage photo={incoming} priority />
-        </div>
-      )}
     </div>
   );
 }

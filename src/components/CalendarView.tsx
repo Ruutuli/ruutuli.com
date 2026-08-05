@@ -108,7 +108,8 @@ export default function CalendarView({ events, cosplays }: CalendarViewProps) {
         />
 
         <div className="grid animate-fade-up gap-8 xl:grid-cols-[1fr_360px]">
-          <div className="closet-panel-outer p-5 transition-shadow duration-300 hover:shadow-closet-lg sm:p-6 lg:p-8">
+          <div className="closet-panel-outer transition-shadow duration-300 hover:shadow-closet-lg">
+            <div className="closet-panel-body">
             <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
               <h3 className="font-sans text-2xl font-bold text-closet-brown sm:text-3xl">{monthLabel}</h3>
               <div className="flex items-center gap-2">
@@ -170,7 +171,7 @@ export default function CalendarView({ events, cosplays }: CalendarViewProps) {
                       isSelected
                         ? "scale-105 bg-closet-pink font-semibold text-white shadow-md"
                         : isToday
-                          ? "closet-card font-semibold text-closet-brown ring-2 ring-closet-pink/50 animate-pulse-soft"
+                          ? "rounded-xl border border-closet-pink/50 bg-white font-semibold text-closet-brown shadow-closet ring-2 ring-closet-pink/50 animate-pulse-soft"
                           : "text-closet-brown hover:scale-105 hover:bg-closet-blush/20"
                     }`}
                   >
@@ -201,9 +202,11 @@ export default function CalendarView({ events, cosplays }: CalendarViewProps) {
                 </span>
               ))}
             </div>
+            </div>
           </div>
 
-          <aside className="closet-panel-outer animate-fade-up p-6 [animation-delay:150ms] lg:p-7">
+          <aside className="closet-panel-outer animate-fade-up [animation-delay:150ms]">
+            <div className="closet-panel-body">
             <h3 className="font-sans text-xl font-bold text-closet-brown sm:text-2xl">
               {selectedDay
                 ? new Date(selectedDay + "T12:00:00").toLocaleDateString("en-US", {
@@ -244,6 +247,7 @@ export default function CalendarView({ events, cosplays }: CalendarViewProps) {
                 ))}
               </ul>
             )}
+            </div>
           </aside>
         </div>
     </div>

@@ -50,9 +50,9 @@ const config: Config = {
         "closet-soft": "0 10px 30px rgba(217, 89, 112, 0.18)",
       },
       animation: {
-        "fade-up": "fadeUp 0.7s ease-out forwards",
-        "fade-in": "fadeIn 0.6s ease-out forwards",
-        "fade-up-stagger": "fadeUp 0.65s ease-out forwards",
+        "fade-up": "fadeUp 0.7s ease-out both",
+        "fade-in": "fadeIn 0.6s ease-out both",
+        "fade-up-stagger": "fadeUp 0.65s ease-out both",
         float: "float 4s ease-in-out infinite",
         "float-slow": "float 6s ease-in-out infinite",
         wiggle: "wiggle 2.5s ease-in-out infinite",

@@ -14,7 +14,7 @@ export default function CosplayCard({ cosplay, index }: CosplayCardProps) {
 
   return (
     <article
-      className="closet-card group relative animate-fade-up overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-closet-lg"
+      className="closet-card group relative animate-fade-up overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-closet-lg"
       style={{ animationDelay: `${index * 100}ms` }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

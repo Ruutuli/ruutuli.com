@@ -62,8 +62,10 @@ export default function AboutView() {
         </article>
 
         <article className="closet-panel-outer">
+          <div className="closet-panel-header">
+            <h2 className="flex-1 font-sans text-xl font-bold text-closet-brown">Bio</h2>
+          </div>
           <div className="closet-panel-body space-y-4">
-            <h2 className="font-sans text-xl font-bold text-closet-brown">Bio</h2>
             <p className="text-base leading-relaxed text-closet-brown-light">
               I&apos;m {siteConfig.displayName} — {siteConfig.roles.toLowerCase()}. I work a full-time job, and
               cosplay is one of my hobbies alongside approximately a million others. I roleplay, make OCs, create
@@ -89,7 +91,7 @@ export default function AboutView() {
           </div>
           <div className="space-y-3">
             {faqItems.map((item) => (
-              <details key={item.question} className="group closet-panel-outer overflow-hidden">
+              <details key={item.question} className="group closet-panel-outer">
                 <summary className="closet-panel-header cursor-pointer list-none [&::-webkit-details-marker]:hidden">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/30 text-closet-brown transition-transform duration-200 group-open:rotate-90">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden>
@@ -98,7 +100,7 @@ export default function AboutView() {
                   </span>
                   <h3 className="flex-1 font-sans text-base font-bold text-closet-brown sm:text-lg">{item.question}</h3>
                 </summary>
-                <div className="closet-panel-body border-t border-closet-rose/10 pt-4">
+                <div className="closet-panel-body pt-4">
                   <p className="text-base leading-relaxed text-closet-brown-light">{item.answer}</p>
                 </div>
               </details>

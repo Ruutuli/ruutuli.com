@@ -236,6 +236,11 @@
     );
   }
 
+  /* Gradient replaces solid bg — prevent closet-btn-peach hover:bg from fighting it */
+  .closet-btn-peach.btn-shimmer {
+    @apply bg-transparent hover:bg-transparent;
+  }
+
   .btn-shimmer:hover {
     animation: shimmer 1.5s ease-in-out infinite;
   }
@@ -245,7 +250,7 @@
   }
 
   .closet-card {
-    @apply rounded-3xl border border-closet-pink/50 bg-white shadow-closet;
+    @apply rounded-2xl border border-closet-pink/50 bg-white shadow-closet;
   }
 }
 
@@ -526,6 +531,12 @@ input[type="search"]::-webkit-search-results-decoration {
   }
 
   .animate-stagger-safe > * {
+    opacity: 1;
+    animation: none;
+  }
+
+  .animate-fade-up,
+  .animate-fade-in {
     opacity: 1;
     animation: none;
   }

@@ -42,7 +42,7 @@ export default function ProgressCard({ cosplay }: ProgressCardProps) {
   const showProgress = cosplay.status !== "retired";
 
   return (
-    <article className="closet-card group animate-fade-up overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/40 hover:shadow-closet-lg">
+    <article className="closet-card group animate-fade-up overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/40 hover:shadow-closet-lg">
       <div className="flex flex-col md:flex-row">
         <div className="relative h-48 w-full shrink-0 md:h-auto md:w-48">
           <ProxiedNextImage
