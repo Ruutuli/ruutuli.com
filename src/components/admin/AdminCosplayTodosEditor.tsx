@@ -84,12 +84,14 @@ export default function AdminCosplayTodosEditor({
 
   function saveEditing() {
     if (!editing?.label.trim()) return;
-    const saved = {
+    const status: BuildTaskStatus =
+      editing.status === "completed" ? "completed" : editing.status;
+    const saved: CosplayTodo = {
       ...editing,
       label: editing.label.trim(),
       dueDate: editing.dueDate?.trim() || undefined,
-      status: editing.status === "completed" ? "completed" : editing.status,
-      percent: editing.status === "completed" ? 100 : editing.percent,
+      status,
+      percent: status === "completed" ? 100 : editing.percent,
     };
     const exists = todos.some((t) => t.id === saved.id);
     onChange(exists ? todos.map((t) => (t.id === saved.id ? saved : t)) : [...todos, saved]);

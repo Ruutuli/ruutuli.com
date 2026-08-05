@@ -196,14 +196,16 @@ export default function AdminTodosManager({
 
   async function saveEditing() {
     if (!editing?.label.trim() || !editing.cosplayId) return;
+    const status: BuildTaskStatus =
+      editing.status === "completed" ? "completed" : editing.status;
     const saved: CosplayTodo = {
       id: editing.id,
       label: editing.label.trim(),
       type: editing.type,
       link: editing.link,
       estimatedCost: editing.estimatedCost,
-      status: editing.status === "completed" ? "completed" : editing.status,
-      percent: editing.status === "completed" ? 100 : editing.percent,
+      status,
+      percent: status === "completed" ? 100 : editing.percent,
       notes: editing.notes,
       dueDate: editing.dueDate?.trim() || undefined,
     };
