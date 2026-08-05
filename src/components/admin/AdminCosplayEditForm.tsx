@@ -50,6 +50,7 @@ function cloneForEdit(c: Cosplay): Partial<Cosplay> {
 function buildSavePayload(form: Partial<Cosplay>): Partial<Cosplay> {
   return applyPartsToCosplay({
     ...form,
+    parts: form.parts ?? [],
     title: form.title || form.character,
     tags:
       typeof form.tags === "string"
@@ -73,20 +74,25 @@ export default function AdminCosplayEditForm({
   events?: ConEvent[];
   extraConventionOptions?: string[];
 }) {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab");
   const saveInFlight = useRef(false);
-  const formRef = useRef<Partial<Cosplay>>(form);
   const todosSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const partsSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sourcesSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const todosSaveInFlight = useRef(false);
   const partsSaveInFlight = useRef(false);
+  const sourcesSaveInFlight = useRef(false);
   const pendingTodosSave = useRef<{ cosplayId: string; todos: CosplayTodo[] } | null>(null);
   const pendingPartsSave = useRef<{ cosplayId: string; parts: CosplayPart[] } | null>(null);
+  const pendingSourcesSave = useRef<{ cosplayId: string; sources: CosplaySource[] } | null>(null);
   const [events, setEvents] = useState<ConEvent[]>(initialEvents ?? []);
   const [extraConventionOptions, setExtraConventionOptions] = useState<string[]>(initialConventionOptions ?? []);
   const [form, setForm] = useState<Partial<Cosplay>>(() => {
     if (isNew) return emptyCosplayForm();
     return cloneForEdit(initial as Cosplay);
   });
+  const formRef = useRef<Partial<Cosplay>>(form);
   const [created, setCreated] = useState(false);
   const [tab, setTab] = useState<EditTab>(() => {
     if (initialTab && TABS.some((t) => t.id === initialTab)) return initialTab as EditTab;
@@ -103,6 +109,7 @@ export default function AdminCosplayEditForm({
     return () => {
       if (todosSaveTimer.current) clearTimeout(todosSaveTimer.current);
       if (partsSaveTimer.current) clearTimeout(partsSaveTimer.current);
+      if (sourcesSaveTimer.current) clearTimeout(sourcesSaveTimer.current);
     };
   }, []);
 

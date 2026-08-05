@@ -58,37 +58,56 @@ export default function AdminCosplaySourcesEditor({
   }
 
   return (
-    <div className="space-y-4">
-      <div>
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-closet-pink/40 bg-closet-blush/15 px-4 py-3.5">
         <p className="text-sm font-semibold text-closet-brown">Sources & credits</p>
-        <p className="text-xs text-closet-brown-light">
+        <p className="mt-0.5 text-xs text-closet-brown-light">
           Track where you got your wig, contacts, props, and other pieces — great for your own reference and sharing with others.
           {autoSave ? " Changes save automatically." : ""}
         </p>
       </div>
 
       {sources.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-closet-pink/60 bg-closet-blush/20 px-5 py-8 text-center">
-          <p className="font-semibold text-closet-brown">No sources logged yet</p>
+        <div className="rounded-2xl border border-dashed border-closet-pink/60 bg-closet-blush/10 px-5 py-10 text-center">
+          <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-closet-rose shadow-sm">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </span>
+          <p className="mt-3 font-semibold text-closet-brown">No sources logged yet</p>
           <p className="mt-1 text-sm text-closet-brown-light">Add where you bought or sourced each piece below.</p>
         </div>
       ) : (
-        <ul className="space-y-2">
+        <ul className="grid gap-3 lg:grid-cols-2">
           {sources.map((source, index) => (
             <li
               key={index}
-              className="group rounded-xl border border-closet-pink/50 bg-white p-3 shadow-sm"
+              className="group rounded-2xl border border-closet-pink/50 bg-gradient-to-br from-white to-closet-blush/15 p-4 shadow-sm"
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                <AdminField
-                  label="Item"
-                  value={source.label}
-                  onChange={(v) => updateSource(index, { label: v })}
-                  placeholder="Wig, Makeup, Belt…"
-                  list={SOURCE_ITEM_DATALIST_ID}
-                  className="sm:w-40"
-                />
-                <label className="block min-w-0 flex-1 text-sm">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-2">
+                  <AdminField
+                    label="Item"
+                    value={source.label}
+                    onChange={(v) => updateSource(index, { label: v })}
+                    placeholder="Wig, Makeup, Belt…"
+                    list={SOURCE_ITEM_DATALIST_ID}
+                    className="min-w-0 flex-1 sm:max-w-[9rem]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => deleteSource(index)}
+                    className="mt-6 shrink-0 rounded-lg p-2 text-closet-brown-light transition hover:bg-rose-50 hover:text-rose-600"
+                    title="Remove source"
+                    aria-label={`Remove ${source.label}`}
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <label className="block min-w-0 text-sm">
                   <span className="mb-1.5 block font-semibold text-closet-brown">Source / product</span>
                   <input
                     type="text"
@@ -98,7 +117,7 @@ export default function AdminCosplaySourcesEditor({
                     className="admin-input w-full"
                   />
                 </label>
-                <label className="block min-w-0 flex-1 text-sm">
+                <label className="block min-w-0 text-sm">
                   <span className="mb-1.5 block font-semibold text-closet-brown">Link (optional)</span>
                   <input
                     type="url"
@@ -108,25 +127,14 @@ export default function AdminCosplaySourcesEditor({
                     className="admin-input w-full"
                   />
                 </label>
-                <button
-                  type="button"
-                  onClick={() => deleteSource(index)}
-                  className="mt-6 shrink-0 self-start rounded-lg p-2 text-closet-brown-light transition hover:bg-rose-50 hover:text-rose-600 sm:mt-7"
-                  title="Remove source"
-                  aria-label={`Remove ${source.label}`}
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </div>
             </li>
           ))}
         </ul>
       )}
 
-      <div className="rounded-xl border border-closet-pink/50 bg-closet-blush/20 p-4">
-        <p className="mb-3 text-xs font-bold uppercase tracking-wide text-closet-brown-light">Add source</p>
+      <div className="rounded-2xl border border-closet-pink/50 bg-closet-blush/20 p-4 sm:p-5">
+        <p className="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-closet-rose">Add source</p>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
           <AdminField
             label="Item"
