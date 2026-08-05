@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   buildImageLoadAttempts,
   normalizeImageUrl,
@@ -8,6 +8,7 @@ import {
   extractFirstImageUrl,
 } from "@/lib/utils/googleDriveImage";
 import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
+import { GalleryItem, GallerySection, GALLERY_SECTION_LABELS } from "@/types/gallery";
 import AdminDrivePicker from "./AdminDrivePicker";
 import { AdminButton } from "./ui";
 
@@ -70,11 +71,13 @@ export function AdminImageField({
   value,
   onChange,
   className = "",
+  variant = "default",
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   className?: string;
+  variant?: "default" | "compact";
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -96,6 +99,56 @@ export function AdminImageField({
     }
     inputRef.current?.focus();
     inputRef.current?.select();
+  }
+
+  if (variant === "compact") {
+    return (
+      <>
+        <div className={`space-y-2 ${className}`}>
+          <span className="text-xs font-semibold text-closet-brown">{label}</span>
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              value={value}
+              onChange={(e) => onChange(normalizeImageUrl(e.target.value))}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text");
+                const url = extractFirstImageUrl(text);
+                if (url) {
+                  e.preventDefault();
+                  onChange(url);
+                }
+              }}
+              placeholder="Paste image link…"
+              className="admin-input min-w-0 flex-1 py-2 text-sm"
+            />
+            <AdminButton variant="secondary" onClick={() => setPickerOpen(true)} className="shrink-0 text-xs">
+              Drive
+            </AdminButton>
+            <AdminButton variant="secondary" onClick={pasteFromClipboard} className="shrink-0 text-xs">
+              Paste
+            </AdminButton>
+            {value && (
+              <AdminButton variant="ghost" onClick={() => onChange("")} className="shrink-0 text-xs">
+                Clear
+              </AdminButton>
+            )}
+          </div>
+        </div>
+
+        <AdminDrivePicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onSelect={(urls) => urls[0] && applyUrl(urls[0])}
+          mode="single"
+          title={`Choose ${label.toLowerCase()}`}
+        />
+      </>
+    );
   }
 
   return (
@@ -157,16 +210,70 @@ export function AdminImageField({
   );
 }
 
+function AdminGalleryAddBar({
+  urlInput,
+  onUrlInputChange,
+  onAdd,
+  onPasteText,
+  onPaste,
+  onDrive,
+  adding = false,
+  placeholder = "Paste image link…",
+}: {
+  urlInput: string;
+  onUrlInputChange: (v: string) => void;
+  onAdd: () => void;
+  onPasteText: (text: string) => void;
+  onPaste: () => void;
+  onDrive: () => void;
+  adding?: boolean;
+  placeholder?: string;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <input
+        type="text"
+        inputMode="url"
+        autoComplete="off"
+        spellCheck={false}
+        value={urlInput}
+        onChange={(e) => onUrlInputChange(e.target.value)}
+        onPaste={(e) => {
+          const text = e.clipboardData.getData("text");
+          if (text.trim()) {
+            e.preventDefault();
+            onPasteText(text);
+          }
+        }}
+        placeholder={placeholder}
+        className="admin-input min-w-[12rem] flex-1 py-2 text-sm"
+        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), onAdd())}
+      />
+      <AdminButton variant="primary" onClick={onAdd} disabled={!urlInput.trim() || adding} className="text-xs">
+        {adding ? "Adding…" : "Add"}
+      </AdminButton>
+      <AdminButton variant="secondary" onClick={onDrive} className="text-xs">
+        Drive
+      </AdminButton>
+      <AdminButton variant="secondary" onClick={onPaste} className="text-xs">
+        Paste
+      </AdminButton>
+    </div>
+  );
+}
+
 export function AdminGalleryField({
   label,
   value,
   onChange,
   className = "",
+  variant = "default",
 }: {
   label: string;
   value: string[];
   onChange: (v: string[]) => void;
   className?: string;
+  variant?: "default" | "embedded";
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [urlInput, setUrlInput] = useState("");
@@ -207,30 +314,19 @@ export function AdminGalleryField({
     }
   }
 
+  const isEmbedded = variant === "embedded";
+
   return (
     <>
       <div className={`space-y-3 ${className}`}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-sm font-semibold text-closet-brown">{label}</span>
-          <div className="flex flex-wrap gap-2">
-            <AdminButton variant="secondary" onClick={() => setPickerOpen(true)} className="text-xs">
-              Add from Drive
-            </AdminButton>
-            <AdminButton variant="secondary" onClick={pasteFromClipboard} className="text-xs">
-              Paste links
-            </AdminButton>
-            <AdminButton
-              variant="ghost"
-              onClick={() => setShowBulk((v) => !v)}
-              className="text-xs"
-            >
-              {showBulk ? "Hide bulk paste" : "Bulk paste"}
-            </AdminButton>
+        {!isEmbedded && label && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm font-semibold text-closet-brown">{label}</span>
           </div>
-        </div>
+        )}
 
-        {value.length > 0 && (
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+        {value.length > 0 ? (
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
             {value.map((url) => (
               <div
                 key={url}
@@ -248,33 +344,33 @@ export function AdminGalleryField({
               </div>
             ))}
           </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-closet-pink/50 bg-closet-blush/15 px-4 py-8 text-center">
+            <p className="text-sm text-closet-brown-light">No extra photos yet</p>
+          </div>
         )}
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            onPaste={(e) => {
-              const text = e.clipboardData.getData("text");
-              const urls = parseImageUrlsFromText(text);
-              if (urls.length > 0) {
-                e.preventDefault();
-                addUrls(urls);
-                setUrlInput("");
-              }
-            }}
-            placeholder="Paste one or more image URLs"
-            className="admin-input flex-1"
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addUrl())}
-          />
-          <AdminButton variant="secondary" onClick={addUrl} disabled={!urlInput.trim()}>
-            Add
+        <AdminGalleryAddBar
+          urlInput={urlInput}
+          onUrlInputChange={setUrlInput}
+          onAdd={addUrl}
+          onPasteText={(text) => {
+            addUrls(parseImageUrlsFromText(text));
+            setUrlInput("");
+          }}
+          onPaste={pasteFromClipboard}
+          onDrive={() => setPickerOpen(true)}
+        />
+
+        {!isEmbedded && (
+          <AdminButton
+            variant="ghost"
+            onClick={() => setShowBulk((v) => !v)}
+            className="text-xs"
+          >
+            {showBulk ? "Hide bulk paste" : "Bulk paste"}
           </AdminButton>
-        </div>
+        )}
 
         {showBulk && (
           <div className="space-y-2 rounded-xl border border-closet-pink/50 bg-closet-blush/20 p-3">
@@ -294,9 +390,11 @@ export function AdminGalleryField({
           </div>
         )}
 
-        <p className="text-xs text-closet-brown-light">
-          {value.length} photo{value.length === 1 ? "" : "s"} in gallery
-        </p>
+        {!isEmbedded && (
+          <p className="text-xs text-closet-brown-light">
+            {value.length} photo{value.length === 1 ? "" : "s"}
+          </p>
+        )}
       </div>
 
       <AdminDrivePicker
@@ -308,4 +406,227 @@ export function AdminGalleryField({
       />
     </>
   );
+}
+
+const COSPLAY_SECTION_GALLERY_CONFIG: Record<
+  Extract<GallerySection, "build" | "reference">,
+  {
+    title: string;
+    shortTitle: string;
+    description: string;
+    panelClass: string;
+    thumbClass: string;
+    accentClass: string;
+    pickerTitle: string;
+  }
+> = {
+  reference: {
+    title: "Reference gallery",
+    shortTitle: "References",
+    description: "Screenshots, concept art, detail refs",
+    panelClass: "rounded-xl border border-amber-200/70 bg-amber-50/30",
+    thumbClass: "border-amber-200/80 bg-amber-50/50",
+    accentClass: "text-amber-800",
+    pickerTitle: "Add reference photos",
+  },
+  build: {
+    title: "Build gallery",
+    shortTitle: "Build",
+    description: "WIP shots and progress photos",
+    panelClass: "rounded-xl border border-sky-200/70 bg-sky-50/30",
+    thumbClass: "border-sky-200/80 bg-sky-50/50",
+    accentClass: "text-sky-900",
+    pickerTitle: "Add build photos",
+  },
+};
+
+export function AdminCosplaySectionGalleryField({
+  cosplayId,
+  section,
+  className = "",
+  embedded = false,
+}: {
+  cosplayId: string;
+  section: Extract<GallerySection, "build" | "reference">;
+  className?: string;
+  embedded?: boolean;
+}) {
+  const config = COSPLAY_SECTION_GALLERY_CONFIG[section];
+  const sectionLabel = GALLERY_SECTION_LABELS[section].toLowerCase();
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [linkInput, setLinkInput] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const loadItems = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        cosplayId,
+        gallerySection: section,
+        limit: "100",
+        includeStats: "0",
+        includeFacets: "0",
+      });
+      const res = await fetch(`/api/admin/gallery/items?${params}`);
+      if (!res.ok) throw new Error("fetch failed");
+      const data = (await res.json()) as { items: GalleryItem[] };
+      setItems(data.items ?? []);
+    } catch {
+      setMessage(`Could not load ${sectionLabel} photos`);
+    } finally {
+      setLoading(false);
+    }
+  }, [cosplayId, section, sectionLabel]);
+
+  useEffect(() => {
+    void loadItems();
+  }, [loadItems]);
+
+  async function addLinks(raw: string) {
+    const links = parseImageUrlsFromText(raw);
+    if (!links.length) return;
+
+    setAdding(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/gallery/add-by-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ links, cosplayId, gallerySection: section }),
+      });
+      if (!res.ok) throw new Error("add failed");
+      const data = (await res.json()) as { added: number; updated: number; errors: string[] };
+      const total = data.added + (data.updated ?? 0);
+      if (total > 0) {
+        setMessage(
+          `Added ${total} photo${total === 1 ? "" : "s"} to ${sectionLabel}${
+            data.errors.length ? ` · ${data.errors.length} skipped` : ""
+          }`,
+        );
+      } else {
+        setMessage(data.errors[0] ?? "No new photos added");
+      }
+      setLinkInput("");
+      await loadItems();
+    } catch {
+      setMessage("Could not add links");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function removeItem(item: GalleryItem) {
+    const nextCosplayIds = item.cosplayIds.filter((id) => id !== cosplayId);
+    try {
+      const res = await fetch(`/api/admin/gallery/items/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cosplayIds: nextCosplayIds }),
+      });
+      if (!res.ok) throw new Error("remove failed");
+      setItems((current) => current.filter((entry) => entry.id !== item.id));
+    } catch {
+      setMessage("Could not remove photo");
+    }
+  }
+
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      await addLinks(text);
+    } catch {
+      /* clipboard blocked */
+    }
+  }
+
+  const content = (
+    <>
+      <div className="mb-3 flex items-baseline justify-between gap-2">
+        <div>
+          <h4 className={`text-sm font-bold ${config.accentClass}`}>
+            {embedded ? config.shortTitle : config.title}
+          </h4>
+          <p className="text-[11px] text-closet-brown-light">{config.description}</p>
+        </div>
+        {!loading && (
+          <span className="shrink-0 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-bold text-closet-brown-light ring-1 ring-closet-pink/40">
+            {items.length}
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <p className="py-6 text-center text-xs text-closet-brown-light">Loading…</p>
+      ) : items.length > 0 ? (
+        <div className="mb-3 grid grid-cols-3 gap-2">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className={`group relative aspect-square overflow-hidden rounded-lg border ${config.thumbClass}`}
+            >
+              <AdminThumbnail src={item.viewUrl} alt={item.name} className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => void removeItem(item)}
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-closet-brown/80 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                aria-label={`Remove from ${sectionLabel}`}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className={`mb-3 rounded-lg border border-dashed px-3 py-6 text-center ${config.thumbClass}`}>
+          <p className="text-xs text-closet-brown-light">No photos yet</p>
+        </div>
+      )}
+
+      <AdminGalleryAddBar
+        urlInput={linkInput}
+        onUrlInputChange={setLinkInput}
+        onAdd={() => void addLinks(linkInput)}
+        onPasteText={(text) => void addLinks(text)}
+        onPaste={() => void pasteFromClipboard()}
+        onDrive={() => setPickerOpen(true)}
+        adding={adding}
+      />
+
+      {message && <p className="mt-2 text-xs font-medium text-closet-rose">{message}</p>}
+    </>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        <div className={className}>{content}</div>
+      ) : (
+        <div className={`space-y-3 border-t border-closet-pink/40 pt-6 ${className} ${config.panelClass} p-4`}>
+          {content}
+        </div>
+      )}
+
+      <AdminDrivePicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(urls) => void addLinks(urls.join("\n"))}
+        mode="multiple"
+        title={config.pickerTitle}
+      />
+    </>
+  );
+}
+
+/** @deprecated Use AdminCosplaySectionGalleryField with section="build" */
+export function AdminBuildGalleryField({
+  cosplayId,
+  className = "",
+}: {
+  cosplayId: string;
+  className?: string;
+}) {
+  return <AdminCosplaySectionGalleryField cosplayId={cosplayId} section="build" className={className} />;
 }

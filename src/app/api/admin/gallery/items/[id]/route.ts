@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { badRequest, notFound, readJsonBody, unauthorized } from "@/lib/admin/api";
 import { matchEventForConvention, removeGalleryItem, updateGalleryItem } from "@/lib/store/galleryStore";
 import { getEvents } from "@/lib/store/eventStore";
-import { GalleryItem } from "@/types/gallery";
+import { GalleryItem, isGallerySection } from "@/types/gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -37,9 +37,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   if (typeof body.photographer === "string") patch.photographer = body.photographer.trim() || undefined;
   if (body.imageType === "reference" || body.imageType === "featured") patch.imageType = body.imageType;
   if (body.imageType === null) patch.imageType = null;
-  if (body.gallerySection === "build" || body.gallerySection === "convention") {
-    patch.gallerySection = body.gallerySection;
-  }
+  if (isGallerySection(body.gallerySection)) patch.gallerySection = body.gallerySection;
   if (body.gallerySection === null) patch.gallerySection = null;
 
   const updated = await updateGalleryItem(id, patch);

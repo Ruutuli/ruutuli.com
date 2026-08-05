@@ -126,7 +126,14 @@ export async function updateCosplay(id: string, patch: Partial<Cosplay>): Promis
   if (!current) return null;
 
   const updated: Cosplay = { ...fromDoc(current), ...patch, id };
-  const synced = updated.parts?.length ? syncCosplayProgressFromParts(updated) : updated;
+  const synced =
+    patch.parts !== undefined
+      ? patch.parts.length
+        ? syncCosplayProgressFromParts(updated)
+        : { ...updated, parts: [] }
+      : updated.parts?.length
+        ? syncCosplayProgressFromParts(updated)
+        : updated;
   const result = await collection.findOneAndReplace(
     { _id: id },
     toDoc(synced),

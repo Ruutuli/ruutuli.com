@@ -223,7 +223,7 @@ export default function AdminGalleryEditModal({
               Page gallery
             </p>
             <div className="grid gap-2">
-              {(["build", "convention"] as const).map((section) => {
+              {(["build", "reference", "convention"] as const).map((section) => {
                 const active = editGallerySection === section;
                 return (
                   <button
@@ -235,7 +235,9 @@ export default function AdminGalleryEditModal({
                       active
                         ? section === "build"
                           ? "border-sky-400 bg-sky-50 text-sky-900"
-                          : "border-violet-400 bg-violet-50 text-violet-900"
+                          : section === "reference"
+                            ? "border-amber-400 bg-amber-50 text-amber-900"
+                            : "border-violet-400 bg-violet-50 text-violet-900"
                         : "border-closet-pink/50 bg-closet-blush/20 text-closet-brown-light hover:border-closet-pink"
                     }`}
                   >
@@ -246,7 +248,7 @@ export default function AdminGalleryEditModal({
               })}
             </div>
             <p className="mt-2 text-[10px] leading-snug text-closet-brown-light">
-              Build = progress & WIP shots · Gallery = finished cosplay photos (default when tagging a character)
+              Reference = detailed refs · Build = progress & WIP · Gallery = finished cosplay photos (default when tagging)
             </p>
           </div>
         </div>

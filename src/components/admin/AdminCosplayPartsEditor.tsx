@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Cosplay,
   CosplayPart,
@@ -19,8 +19,93 @@ const PART_TEMPLATE: { category: CosplayPartCategory; label: string; slots: numb
   { category: "shoes", label: "Shoes", slots: 1 },
   { category: "accessories", label: "Accessories", slots: 4 },
   { category: "other", label: "Other", slots: 2 },
-  { category: "prop", label: "Prop", slots: 1 },
+  { category: "prop", label: "Prop", slots: 4 },
 ];
+
+const CATEGORY_STYLES: Record<
+  CosplayPartCategory,
+  {
+    card: string;
+    header: string;
+    badge: string;
+    badgeMuted: string;
+    addLink: string;
+    checkbox: string;
+  }
+> = {
+  wig: {
+    card: "border-violet-200/80 border-l-violet-500 bg-violet-50/70",
+    header: "text-violet-900",
+    badge: "text-violet-600",
+    badgeMuted: "text-violet-400",
+    addLink: "text-violet-600 hover:text-violet-700",
+    checkbox: "border-violet-300 text-violet-600",
+  },
+  eyes: {
+    card: "border-sky-200/80 border-l-sky-500 bg-sky-50/70",
+    header: "text-sky-900",
+    badge: "text-sky-600",
+    badgeMuted: "text-sky-400",
+    addLink: "text-sky-600 hover:text-sky-700",
+    checkbox: "border-sky-300 text-sky-600",
+  },
+  top: {
+    card: "border-closet-pink/60 border-l-closet-rose bg-closet-blush/50",
+    header: "text-closet-brown",
+    badge: "text-closet-rose",
+    badgeMuted: "text-closet-brown-light",
+    addLink: "text-closet-rose hover:text-closet-mauve",
+    checkbox: "border-closet-pink text-closet-rose",
+  },
+  bottom: {
+    card: "border-amber-200/80 border-l-amber-500 bg-amber-50/70",
+    header: "text-amber-900",
+    badge: "text-amber-700",
+    badgeMuted: "text-amber-500",
+    addLink: "text-amber-700 hover:text-amber-800",
+    checkbox: "border-amber-300 text-amber-600",
+  },
+  socks: {
+    card: "border-indigo-200/80 border-l-indigo-500 bg-indigo-50/70",
+    header: "text-indigo-900",
+    badge: "text-indigo-600",
+    badgeMuted: "text-indigo-400",
+    addLink: "text-indigo-600 hover:text-indigo-700",
+    checkbox: "border-indigo-300 text-indigo-600",
+  },
+  shoes: {
+    card: "border-emerald-200/80 border-l-emerald-500 bg-emerald-50/70",
+    header: "text-emerald-900",
+    badge: "text-emerald-600",
+    badgeMuted: "text-emerald-400",
+    addLink: "text-emerald-600 hover:text-emerald-700",
+    checkbox: "border-emerald-300 text-emerald-600",
+  },
+  accessories: {
+    card: "border-fuchsia-200/80 border-l-fuchsia-500 bg-fuchsia-50/70",
+    header: "text-fuchsia-900",
+    badge: "text-fuchsia-600",
+    badgeMuted: "text-fuchsia-400",
+    addLink: "text-fuchsia-600 hover:text-fuchsia-700",
+    checkbox: "border-fuchsia-300 text-fuchsia-600",
+  },
+  other: {
+    card: "border-stone-200/80 border-l-stone-400 bg-stone-50/70",
+    header: "text-stone-800",
+    badge: "text-stone-600",
+    badgeMuted: "text-stone-400",
+    addLink: "text-stone-600 hover:text-stone-700",
+    checkbox: "border-stone-300 text-stone-500",
+  },
+  prop: {
+    card: "border-orange-200/80 border-l-orange-500 bg-orange-50/70",
+    header: "text-orange-900",
+    badge: "text-orange-600",
+    badgeMuted: "text-orange-400",
+    addLink: "text-orange-600 hover:text-orange-700",
+    checkbox: "border-orange-300 text-orange-600",
+  },
+};
 
 type SlotRow = {
   key: string;
@@ -70,6 +155,17 @@ function sectionsFromSlots(slots: SlotRow[]) {
   }));
 }
 
+function partsSignature(parts: CosplayPart[]): string {
+  return JSON.stringify(
+    parts.map((p) => ({
+      category: p.category,
+      label: p.label,
+      name: p.name,
+      owned: p.owned,
+    })),
+  );
+}
+
 export function AdminCosplayPartsEditor({
   parts,
   onChange,
@@ -82,6 +178,16 @@ export function AdminCosplayPartsEditor({
   trackProgress?: boolean;
 }) {
   const [slots, setSlots] = useState(() => buildSlotsFromParts(parts));
+  const lastSyncedParts = useRef(partsSignature(parts));
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    const incoming = partsSignature(parts);
+    if (incoming === lastSyncedParts.current) return;
+    lastSyncedParts.current = incoming;
+    setSlots(buildSlotsFromParts(parts));
+  }, [parts]);
 
   const savedParts = useMemo(() => slotsToParts(slots), [slots]);
   const pct = savedParts.length ? getCosplayPartsPercent({ parts: savedParts } as Cosplay) : 0;
@@ -89,8 +195,10 @@ export function AdminCosplayPartsEditor({
   const sections = useMemo(() => sectionsFromSlots(slots), [slots]);
 
   function commit(nextSlots: SlotRow[]) {
+    const nextParts = slotsToParts(nextSlots);
+    lastSyncedParts.current = partsSignature(nextParts);
     setSlots(nextSlots);
-    onChange(slotsToParts(nextSlots));
+    onChangeRef.current(nextParts);
   }
 
   function updateSlot(key: string, patch: Partial<Pick<SlotRow, "name" | "owned">>) {
@@ -123,6 +231,7 @@ export function AdminCosplayPartsEditor({
 
   function renderSlotRow(row: SlotRow, canRemove: boolean) {
     const filled = !!row.name.trim();
+    const styles = CATEGORY_STYLES[row.category];
     return (
       <div
         key={row.key}
@@ -133,7 +242,7 @@ export function AdminCosplayPartsEditor({
           checked={row.owned}
           disabled={!filled || !trackProgress}
           onChange={(e) => updateSlot(row.key, { owned: e.target.checked })}
-          className={`h-4 w-4 shrink-0 rounded border-closet-pink text-closet-rose disabled:opacity-40 ${trackProgress ? "" : "hidden"}`}
+          className={`h-4 w-4 shrink-0 rounded disabled:opacity-40 ${styles.checkbox} ${trackProgress ? "" : "hidden"}`}
           title={filled ? (row.owned ? "Owned" : "Not owned yet") : "Fill in a name first"}
         />
         <input
@@ -206,19 +315,20 @@ export function AdminCosplayPartsEditor({
           {sections.map((section) => {
             const filledCount = section.rows.filter((r) => r.name.trim()).length;
             const canAddMore = section.slots > 1 || section.rows.length > 0;
+            const styles = CATEGORY_STYLES[section.category];
             return (
               <section
                 key={section.category}
-                className="rounded-xl border border-closet-pink/50 bg-white p-4 shadow-sm"
+                className={`rounded-xl border border-l-4 p-4 shadow-sm ${styles.card}`}
               >
                 <div className="mb-3 flex items-baseline justify-between gap-2">
-                  <h4 className="text-sm font-bold text-closet-brown">{section.label}</h4>
+                  <h4 className={`text-sm font-bold ${styles.header}`}>{section.label}</h4>
                   {filledCount > 0 ? (
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-closet-rose">
+                    <span className={`text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}>
                       {filledCount} item{filledCount === 1 ? "" : "s"}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-closet-brown-light">
+                    <span className={`text-[10px] font-semibold uppercase tracking-wide ${styles.badgeMuted}`}>
                       N/A
                     </span>
                   )}
@@ -232,7 +342,7 @@ export function AdminCosplayPartsEditor({
                   <button
                     type="button"
                     onClick={() => addRow(section.category, section.label)}
-                    className="mt-3 text-xs font-semibold text-closet-rose hover:underline"
+                    className={`mt-3 text-xs font-semibold hover:underline ${styles.addLink}`}
                   >
                     + Add another {section.label.toLowerCase()}
                   </button>
@@ -269,21 +379,27 @@ export function AdminCosplayPartsEditor({
         <p className="text-sm text-closet-brown-light">No costume parts yet.</p>
       ) : (
         <div className="max-h-64 space-y-3 overflow-y-auto rounded-xl border border-closet-pink/50 bg-closet-blush/15 p-3">
-          {grouped.map((group) => (
-            <div key={group.category}>
-              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-closet-rose">
-                {group.label}
-              </p>
-              <ul className="space-y-1">
-                {group.items.map((part) => (
-                  <li key={`${part.category}-${part.name}`} className="text-sm text-closet-brown">
-                    {trackProgress ? (part.owned ? "✓ " : "○ ") : null}
-                    {part.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {grouped.map((group) => {
+            const styles = CATEGORY_STYLES[group.category];
+            return (
+              <div
+                key={group.category}
+                className={`rounded-lg border border-l-4 px-3 py-2 ${styles.card}`}
+              >
+                <p className={`mb-1.5 text-[10px] font-bold uppercase tracking-wider ${styles.badge}`}>
+                  {group.label}
+                </p>
+                <ul className="space-y-1">
+                  {group.items.map((part) => (
+                    <li key={`${part.category}-${part.name}`} className={`text-sm ${styles.header}`}>
+                      {trackProgress ? (part.owned ? "✓ " : "○ ") : null}
+                      {part.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -291,6 +407,7 @@ export function AdminCosplayPartsEditor({
 }
 
 export function applyPartsToCosplay(cosplay: Partial<Cosplay>): Partial<Cosplay> {
-  if (!cosplay.parts?.length) return cosplay;
+  if (!cosplay.parts) return cosplay;
+  if (!cosplay.parts.length) return { ...cosplay, parts: [] };
   return syncCosplayProgressFromParts(cosplay as Cosplay);
 }

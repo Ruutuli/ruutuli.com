@@ -7,12 +7,17 @@ export const GALLERY_IMAGE_TYPE_LABELS: Record<GalleryImageType, string> = {
 };
 
 /** Which public cosplay page gallery this photo appears in. */
-export type GallerySection = "build" | "convention";
+export type GallerySection = "build" | "convention" | "reference";
 
 export const GALLERY_SECTION_LABELS: Record<GallerySection, string> = {
   build: "Build gallery",
   convention: "Gallery",
+  reference: "Reference gallery",
 };
+
+export function isGallerySection(value: unknown): value is GallerySection {
+  return value === "build" || value === "convention" || value === "reference";
+}
 
 export interface GalleryItem {
   id: string;

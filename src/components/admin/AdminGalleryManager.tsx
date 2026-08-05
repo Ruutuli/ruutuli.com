@@ -905,6 +905,7 @@ export default function AdminGalleryManager({
     if (gallerySectionFilter !== "all") {
       const labels: Record<Exclude<GallerySectionFilter, "all">, string> = {
         build: "Build gallery",
+        reference: "Reference gallery",
         convention: "Gallery",
         unset: "No section",
       };
@@ -1021,15 +1022,15 @@ export default function AdminGalleryManager({
 
       {showAddLinks && (
         <AdminCard className="p-5">
-          <p className="mb-2 text-sm font-semibold text-closet-brown">Add by Google Drive link</p>
+          <p className="mb-2 text-sm font-semibold text-closet-brown">Add by link</p>
           <p className="mb-3 text-xs text-closet-brown-light">
-            Paste share URLs or file IDs, one per line (max 20).
+            Paste image URLs or Google Drive links, one per line (max 20).
           </p>
           <textarea
             value={linkInput}
             onChange={(e) => setLinkInput(e.target.value)}
             rows={4}
-            placeholder="https://drive.google.com/file/d/…"
+            placeholder="https://example.com/photo.jpg or Google Drive link"
             className="admin-input mb-3 w-full resize-y"
           />
           <div className="flex gap-2">
@@ -1122,6 +1123,7 @@ export default function AdminGalleryManager({
                 options={[
                   { value: "all", label: "All sections" },
                   { value: "build", label: "Build gallery" },
+                  { value: "reference", label: "Reference gallery" },
                   { value: "convention", label: "Gallery" },
                   { value: "unset", label: "Untagged section" },
                 ]}
@@ -1374,10 +1376,18 @@ export default function AdminGalleryManager({
                       {!selectMode && item.gallerySection && (
                         <span
                           className={`max-w-full truncate rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white shadow-sm ${
-                            item.gallerySection === "build" ? "bg-sky-600" : "bg-violet-600"
+                            item.gallerySection === "build"
+                              ? "bg-sky-600"
+                              : item.gallerySection === "reference"
+                                ? "bg-amber-600"
+                                : "bg-violet-600"
                           }`}
                         >
-                          {item.gallerySection === "build" ? "Build" : "Gallery"}
+                          {item.gallerySection === "build"
+                            ? "Build"
+                            : item.gallerySection === "reference"
+                              ? "Ref gallery"
+                              : "Gallery"}
                         </span>
                       )}
                       {!selectMode && item.imageType && (
@@ -1624,6 +1634,7 @@ export default function AdminGalleryManager({
                 options={[
                   { value: "", label: "Gallery (default)" },
                   { value: "build", label: "Build gallery" },
+                  { value: "reference", label: "Reference gallery" },
                   { value: "convention", label: "Gallery (force all)" },
                 ]}
               />
@@ -1643,7 +1654,7 @@ export default function AdminGalleryManager({
               />
             </div>
             <p className="text-xs text-closet-brown-light">
-              Character tags go to the normal Gallery tab by default. Pick Build gallery only for WIP / progress shots.
+              Character tags go to the normal Gallery tab by default. Use Reference for detailed refs, Build for WIP shots.
             </p>
             <datalist id="bulk-tag-conventions">
               {conventionOptions.map((name) => (

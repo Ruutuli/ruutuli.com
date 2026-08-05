@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { CosplaySource } from "@/types/cosplay";
-import { AdminButton, AdminSelect } from "./ui";
+import { AdminButton, AdminField } from "./ui";
+
+const SOURCE_ITEM_DATALIST_ID = "cosplay-source-item-suggestions";
 
 const SOURCE_LABELS = [
   "Wig",
@@ -13,17 +15,20 @@ const SOURCE_LABELS = [
   "Socks",
   "Prop",
   "Accessories",
+  "Reference",
+  "Tutorial",
+  "Inspiration",
   "Other",
 ] as const;
-
-const SOURCE_OPTIONS = SOURCE_LABELS.map((l) => ({ value: l, label: l }));
 
 export default function AdminCosplaySourcesEditor({
   sources,
   onChange,
+  autoSave = false,
 }: {
   sources: CosplaySource[];
   onChange: (sources: CosplaySource[]) => void;
+  autoSave?: boolean;
 }) {
   const [newLabel, setNewLabel] = useState<string>("Wig");
   const [newDetail, setNewDetail] = useState("");
@@ -43,7 +48,7 @@ export default function AdminCosplaySourcesEditor({
     onChange([
       ...sources,
       {
-        label: newLabel,
+        label: newLabel.trim() || "Other",
         detail,
         url: newUrl.trim() || undefined,
       },
@@ -58,6 +63,7 @@ export default function AdminCosplaySourcesEditor({
         <p className="text-sm font-semibold text-closet-brown">Sources & credits</p>
         <p className="text-xs text-closet-brown-light">
           Track where you got your wig, contacts, props, and other pieces — great for your own reference and sharing with others.
+          {autoSave ? " Changes save automatically." : ""}
         </p>
       </div>
 
@@ -74,11 +80,12 @@ export default function AdminCosplaySourcesEditor({
               className="group rounded-xl border border-closet-pink/50 bg-white p-3 shadow-sm"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                <AdminSelect
+                <AdminField
                   label="Item"
                   value={source.label}
                   onChange={(v) => updateSource(index, { label: v })}
-                  options={SOURCE_OPTIONS}
+                  placeholder="Wig, Makeup, Belt…"
+                  list={SOURCE_ITEM_DATALIST_ID}
                   className="sm:w-40"
                 />
                 <label className="block min-w-0 flex-1 text-sm">
@@ -121,11 +128,12 @@ export default function AdminCosplaySourcesEditor({
       <div className="rounded-xl border border-closet-pink/50 bg-closet-blush/20 p-4">
         <p className="mb-3 text-xs font-bold uppercase tracking-wide text-closet-brown-light">Add source</p>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-          <AdminSelect
+          <AdminField
             label="Item"
             value={newLabel}
             onChange={setNewLabel}
-            options={SOURCE_OPTIONS}
+            placeholder="Wig, Makeup, Belt…"
+            list={SOURCE_ITEM_DATALIST_ID}
             className="lg:w-40"
           />
           <label className="block min-w-0 flex-1 text-sm">
@@ -159,6 +167,12 @@ export default function AdminCosplaySourcesEditor({
           </AdminButton>
         </div>
       </div>
+
+      <datalist id={SOURCE_ITEM_DATALIST_ID}>
+        {SOURCE_LABELS.map((label) => (
+          <option key={label} value={label} />
+        ))}
+      </datalist>
     </div>
   );
 }

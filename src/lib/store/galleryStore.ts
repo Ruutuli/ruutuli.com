@@ -1,4 +1,4 @@
-import "server-only";
+import { createHash } from "crypto";
 
 import {
   driveFileViewUrl,
@@ -11,7 +11,7 @@ import {
   listImageFilesInFolder,
 } from "@/lib/google-drive/galleryDrive";
 import { logger } from "@/lib/logger";
-import { getGoogleDriveFileId } from "@/lib/utils/googleDriveImage";
+import { getGoogleDriveFileId, isAllowedExternalImageUrl, normalizeImageUrl, parseImageUrlsFromText } from "@/lib/utils/googleDriveImage";
 import { COLLECTIONS, ensureDbIndexes, getCollection } from "@/lib/mongodb/db";
 import { parseGalleryFilenameTags } from "@/lib/gallery/parseFilenameTags";
 import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
@@ -185,6 +185,7 @@ function buildGalleryMongoFilter(filters: GalleryListFilters): Filter<GalleryDoc
   }
 
   if (filters.gallerySection === "build") conditions.push({ gallerySection: "build" });
+  if (filters.gallerySection === "reference") conditions.push({ gallerySection: "reference" });
   if (filters.gallerySection === "convention") conditions.push({ gallerySection: "convention" });
   if (filters.gallerySection === "unset") {
     conditions.push({ $or: [{ gallerySection: null }, { gallerySection: { $exists: false } }] });
@@ -575,50 +576,176 @@ export async function syncGalleryFromDrive(options?: {
   return { synced, skipped, folderIds };
 }
 
-export async function addGalleryItemsByLinks(links: string[]): Promise<{ added: number; errors: string[] }> {
-  const errors: string[] = [];
-  let added = 0;
+function externalGalleryItemId(url: string): string {
+  const normalized = normalizeImageUrl(url);
+  const hash = createHash("sha256").update(normalized).digest("hex").slice(0, 24);
+  return `url_${hash}`;
+}
+
+function nameFromImageUrl(url: string): string {
+  try {
+    const pathname = new URL(url).pathname;
+    const segment = pathname.split("/").filter(Boolean).pop();
+    if (segment) {
+      const decoded = decodeURIComponent(segment);
+      if (/\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i.test(decoded)) return decoded;
+      if (decoded.length <= 80) return decoded;
+    }
+  } catch {
+    /* ignore malformed URLs */
+  }
+  return `Image ${externalGalleryItemId(url).slice(4, 12)}`;
+}
+
+function newExternalGalleryItem(url: string): GalleryItem {
+  const normalized = normalizeImageUrl(url);
+  const id = externalGalleryItemId(normalized);
+  const ts = nowIso();
+  return {
+    id,
+    driveFileId: "",
+    name: nameFromImageUrl(normalized),
+    mimeType: null,
+    folderId: GALLERY_MANUAL_LINK_FOLDER_ID,
+    viewUrl: normalized,
+    published: false,
+    tags: [],
+    cosplayIds: [],
+    sortOrder: 0,
+    createdAt: ts,
+    updatedAt: ts,
+  };
+}
+
+function expandGalleryLinks(links: string[]): string[] {
   const seen = new Set<string>();
+  const out: string[] = [];
 
   for (const raw of links) {
     const trimmed = raw.trim();
     if (!trimmed) continue;
 
-    const fileId = getGoogleDriveFileId(trimmed) ?? (/^[a-zA-Z0-9_-]{15,50}$/.test(trimmed) ? trimmed : null);
-    if (!fileId) {
-      errors.push(`Could not parse Drive link: ${trimmed.slice(0, 60)}`);
+    const parsed = parseImageUrlsFromText(trimmed);
+    const candidates = parsed.length > 0 ? parsed : [normalizeImageUrl(trimmed) || trimmed];
+
+    for (const candidate of candidates) {
+      const key = normalizeImageUrl(candidate) || candidate.trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(key);
+    }
+  }
+
+  return out;
+}
+
+async function tagGalleryItemForCosplay(
+  itemId: string,
+  options: AddGalleryByLinkOptions,
+): Promise<boolean> {
+  if (!options.cosplayId) return false;
+
+  const existing = await getGalleryItemById(itemId);
+  if (!existing) return false;
+
+  const cosplayIds = existing.cosplayIds.includes(options.cosplayId)
+    ? existing.cosplayIds
+    : [...existing.cosplayIds, options.cosplayId];
+
+  await updateGalleryItem(itemId, {
+    cosplayIds,
+    gallerySection: options.gallerySection ?? existing.gallerySection ?? "convention",
+    published: true,
+  });
+  return true;
+}
+
+export type AddGalleryByLinkOptions = {
+  cosplayId?: string;
+  gallerySection?: GallerySection;
+};
+
+export async function addGalleryItemsByLinks(
+  links: string[],
+  options?: AddGalleryByLinkOptions,
+): Promise<{ added: number; updated: number; errors: string[] }> {
+  const errors: string[] = [];
+  let added = 0;
+  let updated = 0;
+  const seen = new Set<string>();
+
+  for (const raw of expandGalleryLinks(links)) {
+    const fileId =
+      getGoogleDriveFileId(raw) ?? (/^[a-zA-Z0-9_-]{15,50}$/.test(raw) ? raw : null);
+
+    if (fileId) {
+      if (seen.has(fileId)) continue;
+      seen.add(fileId);
+
+      const exclusions = await getGalleryExclusions();
+      if (exclusions.has(fileId)) {
+        errors.push(`Skipped excluded file: ${fileId}`);
+        continue;
+      }
+
+      const existing = await getGalleryItemById(fileId);
+      if (existing) {
+        if (await tagGalleryItemForCosplay(fileId, options ?? {})) updated++;
+        continue;
+      }
+
+      const meta = await getDriveFileMetadata(fileId);
+      const name = meta?.name ?? `Drive image ${fileId.slice(0, 8)}`;
+      const parsed = await filenameMetaFor(name);
+      const item = newGalleryItem(
+        {
+          driveFileId: fileId,
+          name,
+          mimeType: meta?.mimeType ?? null,
+          folderId: GALLERY_MANUAL_LINK_FOLDER_ID,
+        },
+        parsed,
+      );
+
+      if (options?.cosplayId) {
+        item.cosplayIds = [options.cosplayId];
+        item.gallerySection = options.gallerySection ?? "convention";
+        item.published = true;
+      }
+
+      await upsertGalleryItem(item);
+      added++;
       continue;
     }
-    if (seen.has(fileId)) continue;
-    seen.add(fileId);
 
-    const exclusions = await getGalleryExclusions();
-    if (exclusions.has(fileId)) {
-      errors.push(`Skipped excluded file: ${fileId}`);
+    const normalized = normalizeImageUrl(raw);
+    if (!isAllowedExternalImageUrl(normalized)) {
+      errors.push(`Not a supported image link: ${raw.slice(0, 60)}`);
       continue;
     }
 
-    const existing = await getGalleryItemById(fileId);
-    if (existing) continue;
+    const itemId = externalGalleryItemId(normalized);
+    if (seen.has(itemId)) continue;
+    seen.add(itemId);
 
-    const meta = await getDriveFileMetadata(fileId);
-    const name = meta?.name ?? `Drive image ${fileId.slice(0, 8)}`;
-    const parsed = await filenameMetaFor(name);
-    const item = newGalleryItem(
-      {
-        driveFileId: fileId,
-        name,
-        mimeType: meta?.mimeType ?? null,
-        folderId: GALLERY_MANUAL_LINK_FOLDER_ID,
-      },
-      parsed,
-    );
+    const existing = await getGalleryItemById(itemId);
+    if (existing) {
+      if (await tagGalleryItemForCosplay(itemId, options ?? {})) updated++;
+      continue;
+    }
+
+    const item = newExternalGalleryItem(normalized);
+    if (options?.cosplayId) {
+      item.cosplayIds = [options.cosplayId];
+      item.gallerySection = options.gallerySection ?? "convention";
+      item.published = true;
+    }
 
     await upsertGalleryItem(item);
     added++;
   }
 
-  return { added, errors };
+  return { added, updated, errors };
 }
 
 function imageUrlsMatch(a: string, b: string): boolean {
@@ -818,6 +945,9 @@ export async function getGalleryPhotoCreditsForCosplay(
 function gallerySectionFilter(section: GallerySection): Filter<GalleryDoc> {
   if (section === "build") {
     return { gallerySection: "build" };
+  }
+  if (section === "reference") {
+    return { gallerySection: "reference" };
   }
   return {
     $or: [

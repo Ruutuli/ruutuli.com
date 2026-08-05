@@ -13,7 +13,7 @@ const PART_SECTIONS = [
   { category: "shoes" as const, label: "Shoes", slots: 1 },
   { category: "accessories" as const, label: "Accessories", slots: 4 },
   { category: "other" as const, label: "Other", slots: 2 },
-  { category: "prop" as const, label: "Prop", slots: 1 },
+  { category: "prop" as const, label: "Prop", slots: 4 },
 ];
 
 function slugify(...parts: string[]): string {

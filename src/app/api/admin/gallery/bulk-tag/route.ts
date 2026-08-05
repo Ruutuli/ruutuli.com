@@ -13,6 +13,7 @@ import {
   GallerySection,
   GallerySectionFilter,
   GallerySortBy,
+  isGallerySection,
 } from "@/types/gallery";
 
 export const dynamic = "force-dynamic";
@@ -66,12 +67,7 @@ export async function POST(request: NextRequest) {
   const mode: BulkTagMode =
     body.mode === "remove" || body.mode === "set" || body.mode === "add" ? body.mode : "add";
 
-  const gallerySection =
-    body.gallerySection === "build" || body.gallerySection === "convention"
-      ? body.gallerySection
-      : body.gallerySection === null
-        ? null
-        : undefined;
+  const gallerySection = isGallerySection(body.gallerySection) ? body.gallerySection : body.gallerySection === null ? null : undefined;
 
   const hasUpdate =
     cosplayIds.length > 0 ||

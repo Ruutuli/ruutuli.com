@@ -100,7 +100,7 @@ const PART_SECTIONS = [
   { category: "shoes", label: "Shoes", slots: 1 },
   { category: "accessories", label: "Accessories", slots: 4 },
   { category: "other", label: "Other", slots: 2 },
-  { category: "prop", label: "Prop", slots: 1 },
+  { category: "prop", label: "Prop", slots: 4 },
 ];
 
 function parseOwned(raw) {

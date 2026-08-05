@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Cosplay, CosplayStatus, CosplayTodo, getCosplayPartsPercent, getOpenCosplayTodos } from "@/types/cosplay";
+import { Cosplay, CosplayPart, CosplaySource, CosplayStatus, CosplayTodo, getCosplayPartsPercent, getOpenCosplayTodos } from "@/types/cosplay";
 import { ConEvent } from "@/types/event";
 import { emptyCosplayForm } from "@/lib/cosplay/emptyForm";
 import { resolveImageSrc } from "@/lib/utils/googleDriveImage";
 import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
-import { GoogleDriveImage } from "@/components/GoogleDriveImage";
 import AdminConventionField from "./AdminConventionField";
-import { AdminGalleryField, AdminImageField } from "./AdminImageField";
+import { AdminCosplayMediaEditor } from "./AdminCosplayMediaEditor";
 import { AdminCosplayPartsEditor, applyPartsToCosplay } from "./AdminCosplayPartsEditor";
 import AdminCosplaySourcesEditor from "./AdminCosplaySourcesEditor";
 import AdminCosplayTodosEditor from "./AdminCosplayTodosEditor";
@@ -74,9 +74,13 @@ export default function AdminCosplayEditForm({
   extraConventionOptions?: string[];
 }) {
   const saveInFlight = useRef(false);
+  const formRef = useRef<Partial<Cosplay>>(form);
   const todosSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const partsSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const todosSaveInFlight = useRef(false);
+  const partsSaveInFlight = useRef(false);
   const pendingTodosSave = useRef<{ cosplayId: string; todos: CosplayTodo[] } | null>(null);
+  const pendingPartsSave = useRef<{ cosplayId: string; parts: CosplayPart[] } | null>(null);
   const [events, setEvents] = useState<ConEvent[]>(initialEvents ?? []);
   const [extraConventionOptions, setExtraConventionOptions] = useState<string[]>(initialConventionOptions ?? []);
   const [form, setForm] = useState<Partial<Cosplay>>(() => {
@@ -84,9 +88,23 @@ export default function AdminCosplayEditForm({
     return cloneForEdit(initial as Cosplay);
   });
   const [created, setCreated] = useState(false);
-  const [tab, setTab] = useState<EditTab>("details");
+  const [tab, setTab] = useState<EditTab>(() => {
+    if (initialTab && TABS.some((t) => t.id === initialTab)) return initialTab as EditTab;
+    return "details";
+  });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  useEffect(() => {
+    return () => {
+      if (todosSaveTimer.current) clearTimeout(todosSaveTimer.current);
+      if (partsSaveTimer.current) clearTimeout(partsSaveTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     const needsEvents = !initialEvents?.length;
@@ -143,13 +161,13 @@ export default function AdminCosplayEditForm({
   async function save() {
     if (!canSave || saveInFlight.current) return;
 
-    const payload = buildSavePayload(form);
-    const snapshot = cloneForEdit(form as Cosplay);
+    const currentForm = formRef.current;
+    const payload = buildSavePayload(currentForm);
+    const snapshot = cloneForEdit(currentForm as Cosplay);
 
-    if (isEditing && form.id) {
+    if (isEditing && currentForm.id) {
       saveInFlight.current = true;
-      setForm(cloneForEdit({ ...payload, id: form.id } as Cosplay));
-      setMessage("Saved");
+      setForm(cloneForEdit({ ...payload, id: currentForm.id } as Cosplay));
 
       const slowTimer = window.setTimeout(() => setSaving(true), 400);
 
@@ -157,11 +175,12 @@ export default function AdminCosplayEditForm({
         const res = await fetch("/api/admin/cosplays", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...payload, id: form.id }),
+          body: JSON.stringify({ ...payload, id: currentForm.id }),
         });
         if (!res.ok) throw new Error("save failed");
         const saved = (await res.json()) as Cosplay;
         setForm(cloneForEdit(saved));
+        setMessage("Saved");
       } catch {
         setForm(snapshot);
         setMessage("Could not save cosplay");
@@ -243,9 +262,91 @@ export default function AdminCosplayEditForm({
     todosSaveInFlight.current = false;
   }
 
+  async function flushPartsSave(cosplayId: string, parts: CosplayPart[]) {
+    pendingPartsSave.current = { cosplayId, parts };
+    if (partsSaveInFlight.current) return;
+
+    partsSaveInFlight.current = true;
+    while (pendingPartsSave.current) {
+      const { cosplayId: id, parts: batch } = pendingPartsSave.current;
+      pendingPartsSave.current = null;
+      const payload = applyPartsToCosplay({ parts: batch });
+      try {
+        const res = await fetch("/api/admin/cosplays", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, parts: payload.parts ?? batch, progress: payload.progress, status: payload.status }),
+        });
+        if (!res.ok) throw new Error("save failed");
+        const saved = (await res.json()) as Cosplay;
+        setForm((prev) => ({
+          ...prev,
+          parts: saved.parts ?? batch,
+          progress: saved.progress ?? prev.progress,
+          status: saved.status ?? prev.status,
+        }));
+      } catch {
+        setMessage("Could not save costume parts");
+      }
+    }
+    partsSaveInFlight.current = false;
+  }
+
+  function schedulePartsSave(cosplayId: string, parts: CosplayPart[]) {
+    if (partsSaveTimer.current) clearTimeout(partsSaveTimer.current);
+    partsSaveTimer.current = setTimeout(() => {
+      void flushPartsSave(cosplayId, parts);
+    }, 600);
+  }
+
+  function handlePartsChange(parts: CosplayPart[]) {
+    setForm((prev) => {
+      const next = applyPartsToCosplay({ ...prev, parts });
+      if (prev.id) schedulePartsSave(prev.id, parts);
+      return next;
+    });
+  }
+
   function handleTodosChange(todos: CosplayTodo[]) {
     update({ todos });
     if (isEditing && form.id) scheduleTodosSave(form.id, todos);
+  }
+
+  function scheduleSourcesSave(cosplayId: string, sources: CosplaySource[]) {
+    if (sourcesSaveTimer.current) clearTimeout(sourcesSaveTimer.current);
+    sourcesSaveTimer.current = setTimeout(() => {
+      void flushSourcesSave(cosplayId, sources);
+    }, 500);
+  }
+
+  async function flushSourcesSave(cosplayId: string, sources: CosplaySource[]) {
+    pendingSourcesSave.current = { cosplayId, sources };
+    if (sourcesSaveInFlight.current) return;
+
+    sourcesSaveInFlight.current = true;
+    while (pendingSourcesSave.current) {
+      const { cosplayId: id, sources: batch } = pendingSourcesSave.current;
+      pendingSourcesSave.current = null;
+      try {
+        const res = await fetch("/api/admin/cosplays", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, sources: batch }),
+        });
+        if (!res.ok) throw new Error("save failed");
+        const saved = (await res.json()) as Cosplay;
+        setForm((prev) => ({ ...prev, sources: saved.sources ?? batch }));
+        setMessage("Sources saved");
+      } catch {
+        setMessage("Could not save sources");
+      }
+    }
+    sourcesSaveInFlight.current = false;
+  }
+
+  function handleSourcesChange(sources: CosplaySource[]) {
+    update({ sources });
+    if (isEditing && form.id) scheduleSourcesSave(form.id, sources);
   }
 
   const charArtSrc = form.characterArt ? resolveImageSrc(form.characterArt) : "";
@@ -445,95 +546,28 @@ export default function AdminCosplayEditForm({
       )}
 
       {tab === "media" && (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
-          {/* Preview column */}
-          <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-            <div className="overflow-hidden rounded-2xl border border-closet-pink/50 bg-closet-blush/30 shadow-closet">
-              <p className="border-b border-closet-pink/40 bg-white/80 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-closet-brown-light">
-                Roster card preview
-              </p>
-              <div className="grid grid-cols-2 gap-px bg-closet-pink/30 p-px">
-                <div>
-                  <p className="bg-white/90 px-2 py-1 text-center text-[9px] font-bold uppercase text-closet-brown-light">
-                    Reference
-                  </p>
-                  <div className="relative aspect-[3/4] bg-closet-blush">
-                    {hasCharArt ? (
-                      <GoogleDriveImage
-                        src={form.characterArt!}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-closet-brown-light">No art</div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <p className="bg-white/90 px-2 py-1 text-center text-[9px] font-bold uppercase text-closet-brown-light">
-                    Featured
-                  </p>
-                  <div className="relative aspect-[3/4] bg-closet-blush">
-                    {hasPhoto ? (
-                      <GoogleDriveImage
-                        src={form.image!}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-closet-brown-light">No photo</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p className="text-center text-xs text-closet-brown-light">
-              Reference = card front · Featured = card back
-            </p>
-          </div>
-
-          {/* Fields column */}
-          <AdminCard className="space-y-6 p-5 sm:p-6">
-            <AdminImageField
-              label="Character art"
-              value={form.characterArt ?? ""}
-              onChange={(v) => update({ characterArt: v })}
-            />
-            <AdminImageField
-              label="Cosplay photo"
-              value={form.image ?? ""}
-              onChange={(v) => update({ image: v })}
-            />
-            <AdminField
-              label="Cosplay photo object position"
-              value={form.imagePosition ?? ""}
-              onChange={(v) => update({ imagePosition: v || undefined })}
-              placeholder="center top"
-            />
-            <AdminField
-              label="Character art object position"
-              value={form.characterArtPosition ?? ""}
-              onChange={(v) => update({ characterArtPosition: v || undefined })}
-              placeholder="center top"
-            />
-            <AdminGalleryField
-              label="Gallery"
-              value={Array.isArray(form.gallery) ? form.gallery : []}
-              onChange={(gallery) => update({ gallery })}
-            />
-          </AdminCard>
-        </div>
+        <AdminCosplayMediaEditor
+          form={form}
+          update={update}
+          cosplayId={form.id}
+          hasCharArt={hasCharArt}
+          hasPhoto={hasPhoto}
+        />
       )}
 
       {tab === "parts" && (
         <AdminCard className="p-5 sm:p-6">
           <AdminCosplayPartsEditor
-            key={form.id ?? "new"}
             parts={form.parts ?? []}
             expanded
             trackProgress={form.status !== "retired"}
-            onChange={(parts) => update(applyPartsToCosplay({ ...form, parts }))}
+            onChange={handlePartsChange}
           />
+          {isEditing && form.id && (
+            <p className="mt-4 text-xs text-closet-brown-light">
+              Costume parts save automatically. Use Save changes for everything else on this build.
+            </p>
+          )}
         </AdminCard>
       )}
 
@@ -551,7 +585,8 @@ export default function AdminCosplayEditForm({
         <AdminCard className="p-5 sm:p-6">
           <AdminCosplaySourcesEditor
             sources={form.sources ?? []}
-            onChange={(sources) => update({ sources })}
+            onChange={handleSourcesChange}
+            autoSave={isEditing && !!form.id}
           />
         </AdminCard>
       )}
