@@ -18,6 +18,7 @@ import {
   BUILD_TASK_TYPE_LABELS,
 } from "@/types/task";
 import { formatEventDate } from "@/data/calendar";
+import { resolveCosplayTodoDisplay, formatTodoCost, todoLinkHostname } from "@/lib/cosplay/todos";
 import { getCosplayProgressPercent } from "@/lib/siteConfig";
 import {
   buildCosplayPhotoFallbacks,
@@ -487,6 +488,8 @@ function CosplayTodoList({
           <ul className="divide-y divide-closet-pink/35 rounded-xl border border-closet-pink/45 bg-white/60">
             {items.map((task) => {
               const done = isCosplayTodoDone(task);
+              const { label, link, cost } = resolveCosplayTodoDisplay(task);
+              const linkLabel = link ? (todoLinkHostname(link) ?? link) : null;
               return (
                 <li
                   key={task.id}
@@ -494,26 +497,32 @@ function CosplayTodoList({
                 >
                   {!isRetired && <CheckIcon owned={done} />}
                   <span className="min-w-0 flex-1">
-                    {task.link ? (
+                    <span className="flex items-start justify-between gap-3">
+                      <span
+                        className={`text-sm font-semibold text-closet-brown ${done ? "line-through" : ""}`}
+                      >
+                        {label}
+                      </span>
+                      {cost != null ? (
+                        <span className="shrink-0 text-sm font-bold text-closet-brown">
+                          {formatTodoCost(cost)}
+                        </span>
+                      ) : null}
+                    </span>
+                    {link ? (
                       <a
-                        href={task.link}
+                        href={link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`block text-sm font-semibold text-closet-rose hover:underline ${done ? "line-through" : ""}`}
+                        className="mt-1 inline-flex max-w-full items-center gap-1 text-xs font-semibold text-closet-rose hover:underline"
                       >
-                        {task.label}
+                        <ExternalLinkIcon />
+                        <span className="truncate">{linkLabel}</span>
                       </a>
-                    ) : (
-                      <span
-                        className={`block text-sm font-semibold text-closet-brown ${done ? "line-through" : ""}`}
-                      >
-                        {task.label}
-                      </span>
-                    )}
+                    ) : null}
                     <span className="mt-0.5 block text-xs text-closet-brown-light">
                       {BUILD_TASK_STATUS_LABELS[task.status]}
                       {task.dueDate ? ` · Due ${formatEventDate(task.dueDate)}` : ""}
-                      {typeof task.estimatedCost === "number" ? ` · $${task.estimatedCost}` : ""}
                       {task.notes ? ` · ${task.notes}` : ""}
                     </span>
                   </span>

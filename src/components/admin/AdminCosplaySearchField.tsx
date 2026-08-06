@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Cosplay } from "@/types/cosplay";
+import { Cosplay, formatCosplayBuildLabel, formatCosplayBuildSubtitle } from "@/types/cosplay";
 import { AdminField } from "./ui";
 
 function filterCosplays(cosplays: Cosplay[], query: string): Cosplay[] {
@@ -11,7 +11,8 @@ function filterCosplays(cosplays: Cosplay[], query: string): Cosplay[] {
     (c) =>
       c.character.toLowerCase().includes(q) ||
       c.series.toLowerCase().includes(q) ||
-      `${c.character} ${c.series}`.toLowerCase().includes(q),
+      (c.outfit ?? "").toLowerCase().includes(q) ||
+      formatCosplayBuildLabel(c).toLowerCase().includes(q),
   );
 }
 
@@ -81,7 +82,7 @@ export default function AdminCosplaySearchField({
                     {active ? "✓ " : ""}
                     {c.character}
                   </span>
-                  <span className="text-xs text-closet-brown-light">{c.series}</span>
+                  <span className="text-xs text-closet-brown-light">{formatCosplayBuildSubtitle(c)}</span>
                 </button>
               </li>
             );
@@ -95,8 +96,7 @@ export default function AdminCosplaySearchField({
 
       {selected && (
         <p className="mt-2 text-xs text-closet-brown-light">
-          Adding to: <strong className="text-closet-brown">{selected.character}</strong>
-          {selected.series ? ` · ${selected.series}` : ""}
+          Adding to: <strong className="text-closet-brown">{formatCosplayBuildLabel(selected)}</strong>
         </p>
       )}
     </div>

@@ -14,6 +14,7 @@ import {
   BuildTaskType,
 } from "@/types/task";
 import { formatEventDate } from "@/data/calendar";
+import { formatTodoCost, resolveCosplayTodoDisplay, todoLinkHostname } from "@/lib/cosplay/todos";
 import { IconPlus } from "./icons";
 import {
   AdminButton,
@@ -154,7 +155,10 @@ export default function AdminCosplayTodosEditor({
         />
       ) : (
         <ul className="divide-y divide-closet-pink/40 rounded-xl border border-closet-pink/50 bg-white">
-          {filtered.map((todo) => (
+          {filtered.map((todo) => {
+            const { label, link, cost } = resolveCosplayTodoDisplay(todo);
+            const linkLabel = link ? (todoLinkHostname(link) ?? link) : null;
+            return (
             <li key={todo.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center">
               <label className="flex shrink-0 cursor-pointer items-center gap-3">
                 <input
@@ -167,26 +171,30 @@ export default function AdminCosplayTodosEditor({
               </label>
 
               <div className="min-w-0 flex-1">
-                {todo.link ? (
-                  <a
-                    href={todo.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`font-semibold hover:text-closet-rose hover:underline ${
-                      isCosplayTodoDone(todo) ? "text-closet-brown-light line-through" : "text-closet-brown"
-                    }`}
-                  >
-                    {todo.label}
-                  </a>
-                ) : (
+                <div className="flex items-start justify-between gap-3">
                   <p
                     className={`font-semibold ${
                       isCosplayTodoDone(todo) ? "text-closet-brown-light line-through" : "text-closet-brown"
                     }`}
                   >
-                    {todo.label}
+                    {label}
                   </p>
-                )}
+                  {cost != null ? (
+                    <span className="shrink-0 text-sm font-bold text-closet-brown">
+                      {formatTodoCost(cost)}
+                    </span>
+                  ) : null}
+                </div>
+                {link ? (
+                  <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-flex max-w-full items-center gap-1 text-xs font-semibold text-closet-rose hover:underline"
+                  >
+                    <span className="truncate">{linkLabel}</span>
+                  </a>
+                ) : null}
                 {todo.notes && (
                   <p className="mt-0.5 truncate text-xs text-closet-brown-light">{todo.notes}</p>
                 )}
@@ -199,11 +207,6 @@ export default function AdminCosplayTodosEditor({
                 {todo.dueDate && (
                   <span className="text-[10px] font-semibold text-closet-brown-light">
                     Due {formatEventDate(todo.dueDate)}
-                  </span>
-                )}
-                {todo.estimatedCost != null && (
-                  <span className="text-[10px] font-semibold text-closet-brown-light">
-                    ${todo.estimatedCost.toFixed(0)}
                   </span>
                 )}
                 <span
@@ -219,7 +222,8 @@ export default function AdminCosplayTodosEditor({
                 </AdminButton>
               </div>
             </li>
-          ))}
+          );
+          })}
         </ul>
       )}
 

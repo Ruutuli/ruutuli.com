@@ -2,6 +2,63 @@ import { Cosplay, CosplayTodo } from "@/types/cosplay";
 import { BuildTask } from "@/types/task";
 import { getTasksForCosplay } from "@/data/tasks";
 
+const LABEL_URL_RE = /https?:\/\/[^\s<>"']+/i;
+const LABEL_COST_RE = /\$\s*(\d+(?:\.\d{1,2})?)/;
+
+export type CosplayTodoDisplay = {
+  label: string;
+  link?: string;
+  cost?: number;
+};
+
+/** Normalize label, link, and cost — prefer dedicated fields, fall back to values embedded in the label. */
+export function resolveCosplayTodoDisplay(todo: CosplayTodo): CosplayTodoDisplay {
+  let label = todo.label.trim();
+  let link = todo.link?.trim() || undefined;
+  let cost =
+    typeof todo.estimatedCost === "number" && !Number.isNaN(todo.estimatedCost)
+      ? todo.estimatedCost
+      : undefined;
+
+  if (!link) {
+    const match = label.match(LABEL_URL_RE);
+    if (match) {
+      link = match[0].replace(/[.,;:!?)]+$/, "");
+      label = label.replace(match[0], "").replace(/\s+/g, " ").trim();
+    }
+  }
+
+  if (cost == null) {
+    const match = label.match(LABEL_COST_RE);
+    if (match) {
+      cost = Number(match[1]);
+      label = label.replace(match[0], "").replace(/\s+/g, " ").trim();
+    }
+  }
+
+  if (link && !label) label = link;
+
+  return { label, link, cost };
+}
+
+/** @deprecated Use resolveCosplayTodoDisplay */
+export function resolveCosplayTodoLink(todo: CosplayTodo): { label: string; link?: string } {
+  const { label, link } = resolveCosplayTodoDisplay(todo);
+  return { label, link };
+}
+
+export function formatTodoCost(cost: number): string {
+  return Number.isInteger(cost) ? `$${cost}` : `$${cost.toFixed(2)}`;
+}
+
+export function todoLinkHostname(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 export function buildTaskToCosplayTodo(task: BuildTask): CosplayTodo {
   return {
     id: task.id,
@@ -71,12 +128,13 @@ export function getDashboardCosplayTodos(
 
 export function groupTodosByCosplay(
   todos: CosplayTodoWithContext[],
-): Map<string, { character: string; series: string; items: CosplayTodoWithContext[] }> {
-  const map = new Map<string, { character: string; series: string; items: CosplayTodoWithContext[] }>();
+): Map<string, { character: string; series: string; outfit: string; items: CosplayTodoWithContext[] }> {
+  const map = new Map<string, { character: string; series: string; outfit: string; items: CosplayTodoWithContext[] }>();
   for (const todo of todos) {
     const entry = map.get(todo.cosplayId) ?? {
       character: todo.character,
       series: "",
+      outfit: "",
       items: [],
     };
     entry.items.push(todo);

@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Cosplay,
   CosplayTodo,
+  formatCosplayBuildLabel,
+  formatCosplayBuildSubtitle,
   getOpenCosplayTodos,
   isCosplayTodoDone,
 } from "@/types/cosplay";
@@ -16,7 +18,15 @@ import {
   BuildTaskType,
 } from "@/types/task";
 import { formatEventDate } from "@/data/calendar";
-import { CosplayTodoWithContext, getAllCosplayTodos, groupTodosByCosplay, resolveCosplayTodos } from "@/lib/cosplay/todos";
+import {
+  CosplayTodoWithContext,
+  formatTodoCost,
+  getAllCosplayTodos,
+  groupTodosByCosplay,
+  resolveCosplayTodoDisplay,
+  resolveCosplayTodos,
+  todoLinkHostname,
+} from "@/lib/cosplay/todos";
 import AdminCosplaySearchField from "./AdminCosplaySearchField";
 import { IconPlus } from "./icons";
 import {
@@ -136,6 +146,7 @@ export default function AdminTodosManager({
     for (const [id, entry] of map) {
       const cosplay = activeCosplays.find((c) => c.id === id);
       entry.series = cosplay?.series ?? "";
+      entry.outfit = cosplay?.outfit ?? "";
     }
     return [...map.entries()].sort(([, a], [, b]) => a.character.localeCompare(b.character));
   }, [filtered, activeCosplays]);
@@ -220,15 +231,34 @@ export default function AdminTodosManager({
     { value: "all", label: "All builds" },
     ...activeCosplays.map((c) => ({
       value: c.id,
-      label: `${c.character} · ${c.series}`,
+      label: formatCosplayBuildLabel(c),
     })),
   ];
 
+  function openAddTodo() {
+    const cosplayId =
+      cosplayFilter !== "all"
+        ? cosplayFilter
+        : activeCosplays.find((c) => c.status === "in-progress")?.id ?? activeCosplays[0]?.id;
+    if (cosplayId) setEditing(emptyTodo(cosplayId));
+  }
+
   return (
-    <div className="space-y-4 pb-28 sm:space-y-6 sm:pb-8">
+    <div className="space-y-4 sm:space-y-6">
       <AdminPageHeader
         title="To-Do List"
         description="All your build tasks in one place — check off, edit, and add from your phone."
+        action={
+          <AdminButton
+            variant="primary"
+            className="w-full sm:w-auto"
+            onClick={openAddTodo}
+            disabled={activeCosplays.length === 0}
+          >
+            <IconPlus />
+            Add to-do
+          </AdminButton>
+        }
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -310,8 +340,9 @@ export default function AdminTodosManager({
         />
       ) : (
         <div className="space-y-5">
-          {grouped.map(([cosplayId, { character, series, items }]) => {
+          {grouped.map(([cosplayId, { character, series, outfit, items }]) => {
             const cosplayOpen = getOpenCosplayTodos(items).length;
+            const subtitle = formatCosplayBuildSubtitle({ series, outfit });
             return (
               <section
                 key={cosplayId}
@@ -325,7 +356,7 @@ export default function AdminTodosManager({
                     >
                       {character}
                     </Link>
-                    <p className="truncate text-xs text-closet-brown-light">{series}</p>
+                    <p className="truncate text-xs text-closet-brown-light">{subtitle}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <span className="text-xs font-bold text-closet-brown-light">
@@ -345,6 +376,8 @@ export default function AdminTodosManager({
                 <ul className="divide-y divide-closet-pink/30">
                   {items.map((todo) => {
                     const done = isCosplayTodoDone(todo);
+                    const { label, link, cost } = resolveCosplayTodoDisplay(todo);
+                    const linkLabel = link ? (todoLinkHostname(link) ?? link) : null;
                     return (
                       <li key={`${cosplayId}-${todo.id}`} className="flex items-start gap-3 px-4 py-4">
                         <button
@@ -364,17 +397,25 @@ export default function AdminTodosManager({
                           )}
                         </button>
 
+                        <div className="min-w-0 flex-1">
                         <button
                           type="button"
                           onClick={() => setEditing({ ...todo, cosplayId })}
-                          className="min-w-0 flex-1 text-left active:opacity-70"
+                          className="w-full text-left active:opacity-70"
                         >
-                          <span
-                            className={`block text-sm font-semibold leading-snug ${
-                              done ? "text-closet-brown-light line-through" : "text-closet-brown"
-                            }`}
-                          >
-                            {todo.label}
+                          <span className="flex items-start justify-between gap-3">
+                            <span
+                              className={`text-sm font-semibold leading-snug ${
+                                done ? "text-closet-brown-light line-through" : "text-closet-brown"
+                              }`}
+                            >
+                              {label}
+                            </span>
+                            {cost != null ? (
+                              <span className="shrink-0 text-sm font-bold text-closet-brown">
+                                {formatTodoCost(cost)}
+                              </span>
+                            ) : null}
                           </span>
                           <span className="mt-1 flex flex-wrap items-center gap-1.5">
                             <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${TYPE_STYLES[todo.type]}`}>
@@ -385,13 +426,19 @@ export default function AdminTodosManager({
                                 Due {formatEventDate(todo.dueDate)}
                               </span>
                             )}
-                            {typeof todo.estimatedCost === "number" && (
-                              <span className="text-[10px] font-semibold text-closet-brown-light">
-                                ${todo.estimatedCost}
-                              </span>
-                            )}
                           </span>
                         </button>
+                        {link ? (
+                          <a
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-flex max-w-full text-xs font-semibold text-closet-rose hover:underline"
+                          >
+                            <span className="truncate">{linkLabel}</span>
+                          </a>
+                        ) : null}
+                        </div>
 
                         <button
                           type="button"
@@ -409,43 +456,6 @@ export default function AdminTodosManager({
           })}
         </div>
       )}
-
-      {/* Mobile sticky add */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-closet-pink/50 bg-white/95 p-4 backdrop-blur-sm sm:hidden">
-        <AdminButton
-          variant="primary"
-          className="w-full !py-3.5 !text-base"
-          onClick={() => {
-            const cosplayId =
-              cosplayFilter !== "all"
-                ? cosplayFilter
-                : activeCosplays.find((c) => c.status === "in-progress")?.id ?? activeCosplays[0]?.id;
-            if (cosplayId) setEditing(emptyTodo(cosplayId));
-          }}
-          disabled={activeCosplays.length === 0}
-        >
-          <IconPlus />
-          Add to-do
-        </AdminButton>
-      </div>
-
-      {/* Desktop add */}
-      <div className="hidden sm:block">
-        <AdminButton
-          variant="primary"
-          onClick={() => {
-            const cosplayId =
-              cosplayFilter !== "all"
-                ? cosplayFilter
-                : activeCosplays[0]?.id;
-            if (cosplayId) setEditing(emptyTodo(cosplayId));
-          }}
-          disabled={activeCosplays.length === 0}
-        >
-          <IconPlus />
-          Add to-do
-        </AdminButton>
-      </div>
 
       {editing && (
         <AdminModal

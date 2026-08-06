@@ -104,6 +104,15 @@ export interface Cosplay {
   sortOrder?: number;
 }
 
+export function formatCosplayBuildSubtitle(cosplay: Pick<Cosplay, "series" | "outfit">): string {
+  const outfit = cosplay.outfit?.trim() || "Default";
+  return `${cosplay.series} · ${outfit}`;
+}
+
+export function formatCosplayBuildLabel(cosplay: Pick<Cosplay, "character" | "series" | "outfit">): string {
+  return `${cosplay.character} · ${formatCosplayBuildSubtitle(cosplay)}`;
+}
+
 export function dedupeCosplaysById(cosplays: Cosplay[]): Cosplay[] {
   return Array.from(
     new Map(cosplays.filter((c) => c.id?.trim()).map((c) => [c.id, c])).values(),
