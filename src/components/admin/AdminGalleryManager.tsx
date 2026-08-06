@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Cosplay } from "@/types/cosplay";
 import { ConEvent } from "@/types/event";
 import { GalleryItem, GalleryPublishedFilter, GalleryImageTypeFilter, GalleryImageType, GallerySection, GallerySectionFilter, GallerySortBy, GALLERY_SECTION_LABELS, GalleryListResult } from "@/types/gallery";
-import { getGalleryAdminImageSrc, ADMIN_GALLERY_THUMB_WIDTH } from "@/lib/utils/googleDriveImage";
+import { getGalleryAdminImageSrc, ADMIN_GALLERY_THUMB_WIDTH, resolveImageCacheVersion } from "@/lib/utils/googleDriveImage";
 import { GALLERY_DEFAULT_PAGE_SIZE, GALLERY_PAGE_SIZES } from "@/lib/gallery/constants";
 import { filterCosplaysByQuery, cosplayPickerSubtitle, suggestCosplaysFromFilenames, autoSelectCosplayIdsFromFilenames } from "@/lib/gallery/suggestCosplayFromFilename";
 import { suggestMetadataFromFilenames } from "@/lib/gallery/parseFilenameTags";
@@ -1312,7 +1312,7 @@ export default function AdminGalleryManager({
                       <div className="aspect-[3/4] bg-closet-blush/40">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId, width: ADMIN_GALLERY_THUMB_WIDTH })}
+                          src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId, width: ADMIN_GALLERY_THUMB_WIDTH, version: resolveImageCacheVersion(item) })}
                           alt=""
                           className="h-full w-full object-cover"
                           loading="lazy"
@@ -1333,7 +1333,7 @@ export default function AdminGalleryManager({
                     <div className="aspect-[3/4] bg-closet-blush/40">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId, width: ADMIN_GALLERY_THUMB_WIDTH })}
+                        src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId, width: ADMIN_GALLERY_THUMB_WIDTH, version: resolveImageCacheVersion(item) })}
                         alt=""
                         className="h-full w-full object-cover"
                         loading="lazy"
@@ -1494,7 +1494,7 @@ export default function AdminGalleryManager({
             <div className="h-32 w-24 shrink-0 overflow-hidden rounded-xl border border-closet-pink/50 bg-closet-blush/40 shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={getGalleryAdminImageSrc(pendingRemove.viewUrl, { driveFileId: pendingRemove.driveFileId, width: ADMIN_GALLERY_THUMB_WIDTH })}
+                src={getGalleryAdminImageSrc(pendingRemove.viewUrl, { driveFileId: pendingRemove.driveFileId, width: ADMIN_GALLERY_THUMB_WIDTH, version: resolveImageCacheVersion(pendingRemove) })}
                 alt=""
                 className="h-full w-full object-cover"
               />

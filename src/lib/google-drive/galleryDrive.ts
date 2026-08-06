@@ -9,6 +9,8 @@ export interface DriveImageFile {
   id: string;
   name: string;
   mimeType: string | null;
+  /** Drive modifiedTime (ISO) — changes when file content is replaced in place. */
+  modifiedTime?: string | null;
   /** Immediate parent folder in Drive. */
   folderId: string;
   folderName: string;
@@ -334,7 +336,7 @@ export async function listImageFilesInFolderTreeWithClient(
       const q = `'${folder.id}' in parents and trashed = false`;
       const apiRes = await drive.files.list({
         q,
-        fields: "nextPageToken, files(id, name, mimeType)",
+        fields: "nextPageToken, files(id, name, mimeType, modifiedTime)",
         pageSize: 1000,
         pageToken,
         ...driveListSharedOpts,
@@ -350,6 +352,7 @@ export async function listImageFilesInFolderTreeWithClient(
             id: f.id,
             name: f.name,
             mimeType: f.mimeType ?? null,
+            modifiedTime: f.modifiedTime ?? null,
             folderId: folder.id,
             folderName: folder.name,
           });
@@ -390,7 +393,7 @@ export async function listFolderContents(folderId: string): Promise<{
     const q = `'${trimmedId}' in parents and trashed = false`;
     const apiRes = await drive.files.list({
       q,
-      fields: "nextPageToken, files(id, name, mimeType)",
+      fields: "nextPageToken, files(id, name, mimeType, modifiedTime)",
       pageSize: 1000,
       pageToken,
       orderBy: "folder,name",
@@ -407,6 +410,7 @@ export async function listFolderContents(folderId: string): Promise<{
           id: f.id,
           name: f.name,
           mimeType: f.mimeType ?? null,
+          modifiedTime: f.modifiedTime ?? null,
           folderId: trimmedId,
           folderName,
         });

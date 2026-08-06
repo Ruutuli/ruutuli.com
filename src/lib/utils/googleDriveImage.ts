@@ -1,5 +1,39 @@
 const VALID_FILE_ID_REGEX = /^[a-zA-Z0-9_-]{15,50}$/;
 
+/** Cache-bust token for gallery images — prefer Drive modifiedTime over catalog updatedAt. */
+export function resolveImageCacheVersion(item?: {
+  driveModifiedAt?: string | null;
+  updatedAt?: string | null;
+}): string | undefined {
+  return item?.driveModifiedAt?.trim() || item?.updatedAt?.trim() || undefined;
+}
+
+/** Query param on image URLs — forwarded to the proxy as `v` to bust browser cache after Drive file replacement. */
+export const IMAGE_CACHE_VERSION_PARAM = "imgv";
+
+export function getImageCacheVersionFromUrl(url: string | null | undefined): string | undefined {
+  if (!url?.trim()) return undefined;
+  try {
+    const parsed = new URL(normalizeImageUrl(url));
+    const version = parsed.searchParams.get(IMAGE_CACHE_VERSION_PARAM)?.trim();
+    return version || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Append a cache-bust token to an image URL (Drive ignores unknown query params). */
+export function withImageCacheVersion(url: string | null | undefined, version?: string | null): string {
+  if (!url?.trim() || !version?.trim()) return url?.trim() ?? "";
+  try {
+    const parsed = new URL(normalizeImageUrl(url));
+    parsed.searchParams.set(IMAGE_CACHE_VERSION_PARAM, version.trim());
+    return parsed.toString();
+  } catch {
+    return url.trim();
+  }
+}
+
 export function isGoogleHostedImageUrl(url: string | null | undefined): boolean {
   if (!url?.trim()) return false;
   return (
@@ -254,11 +288,12 @@ export function shouldUseUnoptimizedImage(src: string | null | undefined): boole
 
 export function getProxyUrl(
   url: string | null | undefined,
-  options?: { width?: number },
+  options?: { width?: number; version?: string },
 ): string {
   if (!url) return "";
 
   const trimmed = normalizeImageUrl(url);
+  const version = options?.version?.trim() || getImageCacheVersionFromUrl(trimmed);
   const fileId = getGoogleDriveFileId(trimmed);
   if (fileId && isGoogleHostedImageUrl(trimmed)) {
     const params = new URLSearchParams({
@@ -268,11 +303,18 @@ export function getProxyUrl(
     if (options?.width) {
       params.set("w", String(Math.min(Math.max(Math.round(options.width), 100), 1920)));
     }
+    if (version) params.set("v", version);
     return `/api/images/proxy?${params.toString()}`;
   }
 
   if (isAllowedExternalImageUrl(trimmed)) {
-    return getExternalProxyUrl(trimmed);
+    const proxied = getExternalProxyUrl(trimmed);
+    if (version && proxied.startsWith("/api/images/proxy")) {
+      const params = new URLSearchParams(proxied.split("?")[1] ?? "");
+      params.set("v", version);
+      return `/api/images/proxy?${params.toString()}`;
+    }
+    return proxied;
   }
 
   return trimmed;
@@ -326,8 +368,9 @@ export function resolveImageSrc(url: string | null | undefined): string {
 /** Admin grid/modals — proxy via server so private Drive files load reliably. */
 export function getGalleryAdminImageSrc(
   url: string | null | undefined,
-  options?: { driveFileId?: string | null; width?: number },
+  options?: { driveFileId?: string | null; width?: number; version?: string },
 ): string {
+  const version = options?.version?.trim() || getImageCacheVersionFromUrl(url ?? "");
   const fileId =
     sanitizeGoogleDriveFileId(options?.driveFileId) ?? getGoogleDriveFileId(normalizeImageUrl(url ?? ""));
   if (fileId) {
@@ -335,12 +378,14 @@ export function getGalleryAdminImageSrc(
       url?.trim() && isGoogleHostedImageUrl(normalizeImageUrl(url))
         ? normalizeImageUrl(url)
         : `https://drive.google.com/file/d/${fileId}/view`;
-    const proxied = getProxyUrl(viewUrl, { width: options?.width });
+    const versionedUrl = version ? withImageCacheVersion(viewUrl, version) : viewUrl;
+    const proxied = getProxyUrl(versionedUrl, { width: options?.width, version });
     if (proxied.startsWith("/api/images/proxy")) return proxied;
     const params = new URLSearchParams({ fileId });
     if (options?.width) {
       params.set("w", String(Math.min(Math.max(Math.round(options.width), 100), 1920)));
     }
+    if (version) params.set("v", version);
     return `/api/images/proxy?${params.toString()}`;
   }
 

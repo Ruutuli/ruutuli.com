@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Cosplay } from "@/types/cosplay";
 import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
 import { GalleryItem, GALLERY_IMAGE_TYPE_LABELS, GALLERY_SECTION_LABELS, GalleryImageType, GallerySection } from "@/types/gallery";
-import { getGalleryAdminImageSrc, getGoogleDriveFileId } from "@/lib/utils/googleDriveImage";
+import { getGalleryAdminImageSrc, getGoogleDriveFileId, resolveImageCacheVersion } from "@/lib/utils/googleDriveImage";
 import {
   filterCosplaysByQuery,
   suggestCosplaysFromFilename,
@@ -162,7 +162,7 @@ export default function AdminGalleryEditModal({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={item.driveFileId}
-              src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId, width: 800 })}
+              src={getGalleryAdminImageSrc(item.viewUrl, { driveFileId: item.driveFileId, width: 800, version: resolveImageCacheVersion(item) })}
               alt=""
               className="aspect-[3/4] w-full object-cover"
               decoding="async"

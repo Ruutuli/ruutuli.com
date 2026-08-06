@@ -41,6 +41,8 @@ export interface GalleryItem {
   eventId?: string;
   /** Photographer credit — often parsed from filename */
   photographer?: string;
+  /** Google Drive modifiedTime — used to bust image proxy cache when a file is replaced in place */
+  driveModifiedAt?: string;
   notes?: string;
   sortOrder: number;
   createdAt: string;

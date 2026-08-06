@@ -11,7 +11,7 @@ import {
   listImageFilesInFolder,
 } from "@/lib/google-drive/galleryDrive";
 import { logger } from "@/lib/logger";
-import { getGoogleDriveFileId, isAllowedExternalImageUrl, normalizeImageUrl, parseImageUrlsFromText } from "@/lib/utils/googleDriveImage";
+import { getGoogleDriveFileId, isAllowedExternalImageUrl, normalizeImageUrl, parseImageUrlsFromText, resolveImageCacheVersion, withImageCacheVersion } from "@/lib/utils/googleDriveImage";
 import { COLLECTIONS, ensureDbIndexes, getCollection } from "@/lib/mongodb/db";
 import { parseGalleryFilenameTags } from "@/lib/gallery/parseFilenameTags";
 import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
@@ -535,6 +535,7 @@ export async function syncGalleryFromDrive(options?: {
                 folderId: file.folderId,
                 folderName: file.folderName,
                 viewUrl: driveFileViewUrl(file.id),
+                driveModifiedAt: file.modifiedTime ?? prev.driveModifiedAt,
                 updatedAt: ts,
               },
               meta,
@@ -551,6 +552,10 @@ export async function syncGalleryFromDrive(options?: {
             },
             meta,
           );
+
+      if (!prev && file.modifiedTime) {
+        item = { ...item, driveModifiedAt: file.modifiedTime };
+      }
 
       pendingWrites.push(item);
       if (pendingWrites.length >= 100) {
@@ -755,6 +760,46 @@ function imageUrlsMatch(a: string, b: string): boolean {
   return a.trim() === b.trim();
 }
 
+/** Cache-bust token for gallery images — prefer Drive modifiedTime over catalog updatedAt. */
+export function getGalleryImageCacheVersion(
+  item: Pick<GalleryItem, "driveModifiedAt" | "updatedAt">,
+): string | undefined {
+  return resolveImageCacheVersion(item);
+}
+
+/** Public-facing image URL with cache-bust param when the file was replaced on Drive. */
+export function versionedGalleryImageUrl(
+  item: Pick<GalleryItem, "viewUrl" | "driveModifiedAt" | "updatedAt">,
+): string {
+  const version = getGalleryImageCacheVersion(item);
+  return version ? withImageCacheVersion(item.viewUrl, version) : item.viewUrl;
+}
+
+async function getGalleryCacheVersionsByFileIds(fileIds: string[]): Promise<Map<string, string>> {
+  const uniqueIds = [...new Set(fileIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return new Map();
+
+  const collection = await getCollection<GalleryDoc>(COLLECTIONS.galleryItems);
+  const docs = await collection
+    .find({ driveFileId: { $in: uniqueIds } }, { projection: { driveFileId: 1, driveModifiedAt: 1, updatedAt: 1 } })
+    .toArray();
+
+  const versions = new Map<string, string>();
+  for (const doc of docs) {
+    const item = fromDoc(doc);
+    const version = getGalleryImageCacheVersion(item);
+    if (version) versions.set(item.driveFileId, version);
+  }
+  return versions;
+}
+
+function versionCosplayImageUrl(url: string | undefined, versions: Map<string, string>): string {
+  if (!url?.trim()) return url ?? "";
+  const fileId = getGoogleDriveFileId(url);
+  const version = fileId ? versions.get(fileId) : undefined;
+  return version ? withImageCacheVersion(url, version) : url;
+}
+
 function isGalleryCosplayPhoto(item: GalleryItem): boolean {
   if (item.imageType === "reference") return false;
   if (item.imageType === "featured") return true;
@@ -791,7 +836,7 @@ export async function getPublishedGalleryPhotosForBanner(): Promise<GalleryBanne
     .map(fromDoc)
     .filter((item) => isGalleryCosplayPhoto(item) && !isCharacterReferencePhoto(item, cosplays))
     .map((item) => ({
-      src: item.viewUrl,
+      src: versionedGalleryImageUrl(item),
       alt: item.photographer
         ? `Cosplay photo by ${item.photographer}`
         : item.name?.trim() || "Cosplay gallery photo",
@@ -851,7 +896,7 @@ export async function getFallbackGalleryDisplayPhotosForCosplays(
           : null;
       if (!bucket) continue;
       const list = bucket.get(cosplayId) ?? [];
-      if (!list.includes(item.viewUrl)) list.push(item.viewUrl);
+      if (!list.includes(item.viewUrl)) list.push(versionedGalleryImageUrl(item));
       bucket.set(cosplayId, list);
     }
   }
@@ -890,7 +935,7 @@ export async function getGalleryDisplayPhotoCandidatesForCosplay(cosplayId: stri
   for (const doc of docs) {
     const item = fromDoc(doc);
     const isReference = isCharacterReferencePhoto(item, cosplay ? [cosplay] : []);
-    const url = item.viewUrl;
+    const url = versionedGalleryImageUrl(item);
     if (isReference) {
       if (seenReference.has(url)) continue;
       seenReference.add(url);
@@ -908,15 +953,36 @@ export async function getGalleryDisplayPhotoCandidatesForCosplay(cosplayId: stri
 
 /** Fill unset roster display photos from linked gallery photos (random pick per page load). */
 export async function enrichCosplaysWithGalleryDisplayPhotos(cosplays: Cosplay[]): Promise<Cosplay[]> {
-  const needsFallback = cosplays.filter((cosplay) => isCosplayPlaceholderImage(cosplay.image));
-  if (needsFallback.length === 0) return cosplays;
-
-  const fallbacks = await getFallbackGalleryDisplayPhotosForCosplays(needsFallback.map((c) => c.id));
+  const needsImageFallback = cosplays.filter((cosplay) => isCosplayPlaceholderImage(cosplay.image));
+  const fileIds = cosplays.flatMap((cosplay) => {
+    const ids: string[] = [];
+    const artId = getGoogleDriveFileId(cosplay.characterArt);
+    const imageId = getGoogleDriveFileId(cosplay.image);
+    if (artId) ids.push(artId);
+    if (imageId) ids.push(imageId);
+    for (const url of cosplay.gallery ?? []) {
+      const id = getGoogleDriveFileId(url);
+      if (id) ids.push(id);
+    }
+    return ids;
+  });
+  const [fallbacks, cacheVersions] = await Promise.all([
+    needsImageFallback.length > 0
+      ? getFallbackGalleryDisplayPhotosForCosplays(needsImageFallback.map((c) => c.id))
+      : Promise.resolve(new Map<string, string>()),
+    getGalleryCacheVersionsByFileIds(fileIds),
+  ]);
 
   return cosplays.map((cosplay) => {
-    if (!isCosplayPlaceholderImage(cosplay.image)) return cosplay;
+    const versioned = {
+      ...cosplay,
+      characterArt: versionCosplayImageUrl(cosplay.characterArt, cacheVersions),
+      image: versionCosplayImageUrl(cosplay.image, cacheVersions),
+      gallery: (cosplay.gallery ?? []).map((url) => versionCosplayImageUrl(url, cacheVersions)),
+    };
+    if (!isCosplayPlaceholderImage(versioned.image)) return versioned;
     const fallback = fallbacks.get(cosplay.id);
-    return fallback ? { ...cosplay, image: fallback } : cosplay;
+    return fallback ? { ...versioned, image: fallback } : versioned;
   });
 }
 
@@ -983,9 +1049,10 @@ export async function getGallerySectionPhotosForCosplay(
   const seen = new Set<string>();
   const urls: string[] = [];
   for (const item of items) {
-    if (!seen.has(item.viewUrl)) {
-      seen.add(item.viewUrl);
-      urls.push(item.viewUrl);
+    const url = versionedGalleryImageUrl(item);
+    if (!seen.has(url)) {
+      seen.add(url);
+      urls.push(url);
     }
   }
   return urls;

@@ -87,7 +87,6 @@ export default function AboutView() {
           <div className="text-center lg:text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-closet-rose">questions</p>
             <h2 className="mt-2 font-sans text-2xl font-bold text-closet-brown sm:text-3xl">FAQ</h2>
-            <p className="mt-2 text-base text-closet-brown-light">Things people actually ask. Answers are honest.</p>
           </div>
           <div className="space-y-3">
             {faqItems.map((item) => (
