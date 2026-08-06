@@ -268,6 +268,7 @@ export function AdminModal({
   footer,
   wide = false,
   xl = false,
+  closeOnBackdropClick = false,
 }: {
   title: string;
   children: ReactNode;
@@ -275,6 +276,8 @@ export function AdminModal({
   footer: ReactNode;
   wide?: boolean;
   xl?: boolean;
+  /** When false (default), clicking outside the modal does not dismiss it — avoids losing form input. */
+  closeOnBackdropClick?: boolean;
 }) {
   const sizeClass = xl ? "max-w-7xl" : wide ? "max-w-3xl" : "";
   const bodyClass = xl ? "max-h-[min(82vh,760px)]" : "max-h-[min(60vh,520px)]";
@@ -285,7 +288,10 @@ export function AdminModal({
   }
 
   return (
-    <div className="admin-modal-backdrop" onClick={closeModal}>
+    <div
+      className="admin-modal-backdrop"
+      onClick={closeOnBackdropClick ? closeModal : undefined}
+    >
       <div
         className={`admin-modal ${sizeClass}`}
         onClick={(e) => e.stopPropagation()}
