@@ -142,11 +142,20 @@ function sortEntries(entries: WigCardEntry[]): WigCardEntry[] {
   });
 }
 
+/** Split into as few cards as fit under maxPerCard, with counts as even as possible. */
 function chunkEntries(entries: WigCardEntry[], maxPerCard: number): WigCardEntry[][] {
   if (entries.length === 0) return [];
+
+  const cardCount = Math.ceil(entries.length / maxPerCard);
+  const base = Math.floor(entries.length / cardCount);
+  const remainder = entries.length % cardCount;
+
   const groups: WigCardEntry[][] = [];
-  for (let i = 0; i < entries.length; i += maxPerCard) {
-    groups.push(entries.slice(i, i + maxPerCard));
+  let offset = 0;
+  for (let i = 0; i < cardCount; i++) {
+    const size = base + (i < remainder ? 1 : 0);
+    groups.push(entries.slice(offset, offset + size));
+    offset += size;
   }
   return groups;
 }
