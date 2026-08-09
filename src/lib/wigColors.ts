@@ -27,12 +27,12 @@ export const WIG_COLOR_MAP: Record<string, string> = {
   cyan: "#0891b2",
   teal: "#0d9488",
   turquoise: "#14b8a6",
-  /** Multi / prism / mixed effect colors file with water (aqua–teal). */
   water: "#06b6d4",
-  multi: "#06b6d4",
-  mixed: "#06b6d4",
-  prism: "#06b6d4",
-  rainbow: "#06b6d4",
+  /** Multi / prism / rainbow effect colors file with white. */
+  multi: "#f8fafc",
+  mixed: "#f8fafc",
+  prism: "#f8fafc",
+  rainbow: "#f8fafc",
   magenta: "#d946ef",
   peach: "#fdba74",
   cream: "#fef3c7",
@@ -41,26 +41,21 @@ export const WIG_COLOR_MAP: Record<string, string> = {
 
 const LIGHT_SWATCHES = new Set(["#f8fafc", "#fef3c7", "#e8c872", "#fdba74", "#e2e8f0", "#d4b896"]);
 
-/** Watercolor / multi-streak swatch — aqua through violet. */
-const MULTI_WATER_SWATCH =
-  "linear-gradient(135deg, #67e8f9 0%, #22d3ee 18%, #06b6d4 36%, #3b82f6 55%, #8b5cf6 78%, #ec4899 100%)";
+/** Rainbow swatch for multi / prism / streak effect colors. */
+const MULTI_EFFECT_SWATCH =
+  "linear-gradient(135deg, #f8fafc 0%, #67e8f9 18%, #3b82f6 40%, #8b5cf6 62%, #ec4899 82%, #f8fafc 100%)";
 
-const MULTI_WATER_TOKENS = ["multi", "mixed", "prism", "rainbow", "watercolor", "water"] as const;
+const MULTI_EFFECT_TOKENS = ["multi", "mixed", "prism", "rainbow"] as const;
 
-/** True when the label is a multi/effect color that belongs with water (aqua–teal). */
-export function isMultiWaterWigColor(name: string): boolean {
+/** True for multi / prism / rainbow effect labels (file under white). */
+export function isMultiEffectWigColor(name: string): boolean {
   const lower = name.toLowerCase();
-  return MULTI_WATER_TOKENS.some((token) => {
-    if (token === "water") {
-      // Avoid matching unrelated words; allow bare "water" / "watercolor".
-      return (
-        lower === "water" ||
-        lower.includes("watercolor") ||
-        /(^|[^a-z])water([^a-z]|$)/.test(lower)
-      );
-    }
-    return lower.includes(token);
-  });
+  return MULTI_EFFECT_TOKENS.some((token) => lower.includes(token));
+}
+
+/** @deprecated Use isMultiEffectWigColor — kept for any older imports. */
+export function isMultiWaterWigColor(name: string): boolean {
+  return isMultiEffectWigColor(name);
 }
 
 export function parseWigColorSegments(name: string): { primary: string; secondary?: string } {
@@ -83,7 +78,7 @@ export function getWigColorPrimary(name: string): string {
 export function resolveSwatchColor(name: string): string {
   const lower = name.toLowerCase();
   if (lower === "none" || lower === "n/a") return WIG_COLOR_MAP.none;
-  if (isMultiWaterWigColor(lower)) return WIG_COLOR_MAP.water;
+  if (isMultiEffectWigColor(lower)) return WIG_COLOR_MAP.white;
 
   for (const [key, hex] of Object.entries(WIG_COLOR_MAP)) {
     if (lower.includes(key)) return hex;
@@ -93,8 +88,8 @@ export function resolveSwatchColor(name: string): string {
 }
 
 export function resolveWigSwatch(name: string): { from: string; to?: string } {
-  if (isMultiWaterWigColor(name)) {
-    return { from: WIG_COLOR_MAP.water, to: WIG_COLOR_MAP.purple };
+  if (isMultiEffectWigColor(name)) {
+    return { from: WIG_COLOR_MAP.white, to: WIG_COLOR_MAP.purple };
   }
   const { primary, secondary } = parseWigColorSegments(name);
   const from = resolveSwatchColor(primary);
@@ -104,7 +99,7 @@ export function resolveWigSwatch(name: string): { from: string; to?: string } {
 
 /** CSS background for swatches — gradient when the name has two colors separated by ";". */
 export function wigSwatchBackground(name: string): string {
-  if (isMultiWaterWigColor(name)) return MULTI_WATER_SWATCH;
+  if (isMultiEffectWigColor(name)) return MULTI_EFFECT_SWATCH;
   const { from, to } = resolveWigSwatch(name);
   if (!to || to === from) return from;
   return `linear-gradient(135deg, ${from} 0%, ${from} 42%, ${to} 100%)`;
@@ -115,14 +110,14 @@ export function swatchNeedsBorder(hex: string): boolean {
 }
 
 export function swatchNeedsBorderForName(name: string): boolean {
-  if (isMultiWaterWigColor(name)) return false;
+  if (isMultiEffectWigColor(name)) return true;
   const { from, to } = resolveWigSwatch(name);
   return swatchNeedsBorder(from) || (to ? swatchNeedsBorder(to) : false);
 }
 
-/** Filter/group key — multi/prism/etc. group with water (teal). */
+/** Filter/group key — multi/prism/rainbow group with white. */
 export function getWigColorFamily(name: string): string {
-  if (isMultiWaterWigColor(name)) return "teal";
+  if (isMultiEffectWigColor(name)) return "white";
 
   const lower = getWigColorPrimary(name).toLowerCase();
   const keys = Object.keys(WIG_COLOR_MAP)

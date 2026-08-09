@@ -3,7 +3,7 @@ import "server-only";
 import { Wig } from "@/types/wig";
 import {
   getWigColorPrimary,
-  isMultiWaterWigColor,
+  isMultiEffectWigColor,
 } from "@/lib/wigColors";
 
 export type WigColorCategory =
@@ -47,7 +47,7 @@ const CATEGORY_ORDER: {
   { id: "red", title: "Red", accent: "#dc2626" },
   { id: "orange", title: "Orange", accent: "#ea580c" },
   { id: "blonde", title: "Blonde", accent: "#e8c872" },
-  { id: "green", title: "Green / Teal / Water", accent: "#0d9488" },
+  { id: "green", title: "Green / Teal", accent: "#0d9488" },
   { id: "blue", title: "Blue", accent: "#3b82f6" },
   { id: "purple", title: "Purple", accent: "#9333ea" },
   { id: "black", title: "Black", accent: "#1c1917" },
@@ -74,9 +74,6 @@ export function categorizeWigColor(color: string): WigColorCategory {
   const lower = primary.toLowerCase();
   const full = color.toLowerCase();
 
-  // Multi / prism / rainbow / water effect colors file with Green / Teal (water).
-  if (isMultiWaterWigColor(full) || isMultiWaterWigColor(lower)) return "green";
-
   if (lower.includes("pink") || lower.includes("magenta") || full.includes("pink")) return "pink";
   if (lower.includes("red") || lower.includes("crimson")) return "red";
   if (lower.includes("orange") || lower.includes("peach")) return "orange";
@@ -100,7 +97,10 @@ export function categorizeWigColor(color: string): WigColorCategory {
   if (lower.includes("gray") || lower.includes("grey") || lower.includes("silver") || lower.includes("ash")) {
     return "gray";
   }
-  if (lower.includes("white") || lower.includes("cream")) return "white";
+  // Multi / prism / rainbow (and white + streaks) file under White.
+  if (isMultiEffectWigColor(full) || isMultiEffectWigColor(lower) || lower.includes("white") || lower.includes("cream")) {
+    return "white";
+  }
   if (
     lower.includes("brown") ||
     lower.includes("brunette") ||
