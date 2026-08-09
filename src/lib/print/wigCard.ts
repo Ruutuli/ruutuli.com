@@ -155,8 +155,13 @@ function cardsForCategory(_category: WigColorCategory, entries: WigCardEntry[]):
   return chunkEntries(entries, WIGS_PER_CARD);
 }
 
-/** Scale type to fit every entry inside the 4×6 card body (below the hero). */
-const CARD_BODY_HEIGHT_IN = 5.25;
+/**
+ * Usable body height under the hero on a 4×6 card.
+ * Kept conservative so the last row isn’t clipped by photo-printer margins.
+ */
+const CARD_BODY_HEIGHT_IN = 4.85;
+/** Extra bottom inset so the last wig doesn’t print into the cutter/bleed. */
+const BODY_PAD_BOTTOM_IN = 0.22;
 
 function fitVarsForEntryCount(count: number, compactEntries: boolean): string {
   for (let textPt = 9; textPt >= 5; textPt -= 0.25) {
@@ -166,16 +171,17 @@ function fitVarsForEntryCount(count: number, compactEntries: boolean): string {
     const metaMtIn = textPt <= 6 ? 0.008 : 0.012;
     const entryPadIn = textPt <= 6 ? 0.01 : textPt <= 7.5 ? 0.016 : 0.022;
     const gapIn = textPt <= 6 ? 0.008 : textPt <= 7.5 ? 0.012 : 0.018;
+    const bodyPadTop = count >= 16 ? 0.05 : count >= 12 ? 0.06 : count >= 8 ? 0.07 : 0.08;
 
     const entryIn =
       lineIn + (compactEntries ? metaMtIn + secondaryIn : metaMtIn + lineIn + metaMtIn + secondaryIn) + entryPadIn;
     const totalIn = count * entryIn + Math.max(0, count - 1) * gapIn;
+    const availableIn = CARD_BODY_HEIGHT_IN - bodyPadTop - BODY_PAD_BOTTOM_IN;
 
-    if (totalIn <= CARD_BODY_HEIGHT_IN) {
+    if (totalIn <= availableIn) {
       const titlePt = Math.max(10, Math.min(14, textPt + (count <= 10 ? 3 : 2)));
       const heroPad = count >= 16 ? 0.07 : count >= 12 ? 0.085 : count >= 8 ? 0.1 : 0.12;
       const swatch = count >= 16 ? 0.18 : count >= 12 ? 0.2 : 0.24;
-      const bodyPad = count >= 16 ? 0.05 : count >= 12 ? 0.06 : 0.08;
 
       return [
         `--wig-text:${textPt}pt`,
@@ -186,7 +192,8 @@ function fitVarsForEntryCount(count: number, compactEntries: boolean): string {
         `--wig-meta-mt:${metaMtIn}in`,
         `--wig-hero-pad:${heroPad}in`,
         `--wig-swatch:${swatch}in`,
-        `--wig-body-pad:${bodyPad}in`,
+        `--wig-body-pad:${bodyPadTop}in`,
+        `--wig-body-pad-bottom:${BODY_PAD_BOTTOM_IN}in`,
       ].join(";");
     }
   }
@@ -200,12 +207,13 @@ function fitVarsForEntryCount(count: number, compactEntries: boolean): string {
     "--wig-meta-mt:0.006in",
     "--wig-hero-pad:0.06in",
     "--wig-swatch:0.16in",
-    "--wig-body-pad:0.04in",
+    "--wig-body-pad:0.05in",
+    `--wig-body-pad-bottom:${BODY_PAD_BOTTOM_IN}in`,
   ].join(";");
 }
 
 function useCompactEntries(count: number): boolean {
-  return count >= 15;
+  return count >= 14;
 }
 
 export function buildWigColorCards(wigs: Wig[], categories?: WigColorCategory[]): WigColorCard[] {
@@ -456,13 +464,13 @@ const WIG_CARD_STYLES = `
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    padding: var(--wig-body-pad, 0.08in) 0.14in calc(var(--wig-body-pad, 0.08in) + 0.03in);
+    padding: var(--wig-body-pad, 0.08in) 0.14in var(--wig-body-pad-bottom, 0.22in);
   }
 
   .wig-list {
     list-style: none;
     margin: 0;
-    padding: 0;
+    padding: 0 0 0.04in;
     display: flex;
     flex-direction: column;
     gap: var(--wig-gap, 0.016in);
@@ -475,7 +483,7 @@ const WIG_CARD_STYLES = `
 
   .wig-entry:last-child {
     border-bottom: none;
-    padding-bottom: 0;
+    padding-bottom: 0.02in;
   }
 
   .wig-entry-heading {
