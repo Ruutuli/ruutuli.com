@@ -174,10 +174,14 @@ function ColorFilterPills({
 
 function WigMobileRow({
   wig,
+  selected,
+  onToggle,
   onEdit,
   onRemove,
 }: {
   wig: Wig;
+  selected: boolean;
+  onToggle: () => void;
   onEdit: () => void;
   onRemove: () => void;
 }) {
@@ -185,10 +189,19 @@ function WigMobileRow({
 
   return (
     <li className="flex items-stretch gap-1 border-b border-closet-pink/35 last:border-b-0">
+      <label className="admin-btn-touch flex shrink-0 items-center px-2">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggle}
+          className="h-4 w-4 accent-closet-rose"
+          aria-label={`Select ${wig.character || wig.brand}`}
+        />
+      </label>
       <button
         type="button"
         onClick={onEdit}
-        className="admin-btn-touch flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left active:bg-closet-blush/40"
+        className="admin-btn-touch flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left active:bg-closet-blush/40"
       >
         <span
           className="w-1 shrink-0 self-stretch rounded-full"
@@ -224,6 +237,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
   const [sortBy, setSortBy] = useState<SortKey>("brand");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState<Partial<Wig> | null>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -352,7 +366,60 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
       return;
     }
     setWigs((prev) => prev.filter((w) => w.id !== id));
+    setSelectedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     setMessage("Wig removed");
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectFiltered() {
+    setSelectedIds(new Set(filtered.map((w) => w.id)));
+  }
+
+  function selectPage() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const w of pagination.pageItems) next.add(w.id);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function printSelectedLabels() {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds).join(",");
+    window.open(`/api/admin/wigs/labels?ids=${encodeURIComponent(ids)}`, "_blank");
+  }
+
+  const pageAllSelected =
+    pagination.pageItems.length > 0 && pagination.pageItems.every((w) => selectedIds.has(w.id));
+  const pageSomeSelected = pagination.pageItems.some((w) => selectedIds.has(w.id));
+
+  function togglePageSelection() {
+    if (pageAllSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        for (const w of pagination.pageItems) next.delete(w.id);
+        return next;
+      });
+      return;
+    }
+    selectPage();
   }
 
   const hasFilters = brandFilter !== "all" || lengthFilter !== "all" || colorFilter !== "all" || query.trim();
@@ -463,7 +530,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
           <div>
             <p className="text-sm font-bold text-closet-brown">Avery 5260 labels</p>
             <p className="mt-0.5 text-xs text-closet-brown-light">
-              30 labels/sheet · character (or brand) · brand · style · length · color
+              30 labels/sheet · check wigs below to print a custom set · or print all / by color here
             </p>
           </div>
           <Link href="/api/admin/wigs/labels" target="_blank" className="admin-btn-primary shrink-0 text-sm">
@@ -742,11 +809,37 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
               sortLabel={sortLabel}
             />
 
+            <div className="flex flex-col gap-2 border-b border-closet-pink/40 px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <AdminButton variant="secondary" className="admin-btn-touch text-xs" onClick={selectFiltered}>
+                  Select filtered ({filtered.length})
+                </AdminButton>
+                <AdminButton variant="secondary" className="admin-btn-touch text-xs" onClick={selectPage}>
+                  Select page
+                </AdminButton>
+                {selectedIds.size > 0 ? (
+                  <AdminButton variant="ghost" className="admin-btn-touch text-xs" onClick={clearSelection}>
+                    Clear ({selectedIds.size})
+                  </AdminButton>
+                ) : null}
+              </div>
+              <AdminButton
+                variant="primary"
+                className="admin-btn-touch text-sm"
+                disabled={selectedIds.size === 0}
+                onClick={printSelectedLabels}
+              >
+                Print selected labels ({selectedIds.size})
+              </AdminButton>
+            </div>
+
             <ul className="lg:hidden">
               {pagination.pageItems.map((w) => (
                 <WigMobileRow
                   key={w.id}
                   wig={w}
+                  selected={selectedIds.has(w.id)}
+                  onToggle={() => toggleSelected(w.id)}
                   onEdit={() => setEditing({ ...w })}
                   onRemove={() => remove(w.id)}
                 />
@@ -765,10 +858,15 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
                 {pagination.pageItems.map((w) => {
                   const swatchBg = wigSwatchBackground(w.color);
                   const brandRing = BRAND_RING[w.brand] ?? "ring-closet-pink/40";
+                  const selected = selectedIds.has(w.id);
                   return (
                     <article
                       key={w.id}
-                      className={`group relative overflow-hidden rounded-xl border border-closet-pink/50 bg-gradient-to-br from-white to-closet-blush/20 shadow-sm ${brandRing} ring-1`}
+                      className={`group relative overflow-hidden rounded-xl border bg-gradient-to-br from-white to-closet-blush/20 shadow-sm ring-1 ${
+                        selected
+                          ? "border-closet-rose ring-closet-rose/50"
+                          : `border-closet-pink/50 ${brandRing}`
+                      }`}
                     >
                       <div className="absolute inset-y-0 left-0 w-2 sm:w-1.5" style={{ background: swatchBg }} />
                       <div className="p-4 pl-6 sm:pl-5">
@@ -779,6 +877,15 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
                               {w.character || "Unassigned"}
                             </p>
                           </div>
+                          <label className="admin-btn-touch shrink-0 pt-0.5">
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => toggleSelected(w.id)}
+                              className="h-4 w-4 accent-closet-rose"
+                              aria-label={`Select ${w.character || w.brand}`}
+                            />
+                          </label>
                         </div>
 
                         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -816,9 +923,21 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
                 })}
               </div>
             ) : (
-              <AdminDataTable minWidth={720}>
+              <AdminDataTable minWidth={760}>
                 <AdminTableHead>
                   <tr>
+                    <th className="w-10 !pl-4 !pr-1">
+                      <input
+                        type="checkbox"
+                        checked={pageAllSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = pageSomeSelected && !pageAllSelected;
+                        }}
+                        onChange={togglePageSelection}
+                        className="h-4 w-4 accent-closet-rose"
+                        aria-label="Select all on this page"
+                      />
+                    </th>
                     {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
                       <AdminTableSortHeader
                         key={key}
@@ -826,7 +945,6 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
                         active={sortBy === key}
                         direction={sortBy === key ? sortDir : undefined}
                         onSort={() => toggleSort(key)}
-                        className={key === "brand" ? "!pl-5" : ""}
                       />
                     ))}
                     <AdminTableActionsHeader className="!px-5" />
@@ -834,8 +952,20 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
                 </AdminTableHead>
                 <tbody>
                   {pagination.pageItems.map((w) => (
-                    <tr key={w.id} className="group admin-table-row">
-                      <td className="px-5 py-3.5">
+                    <tr
+                      key={w.id}
+                      className={`group admin-table-row ${selectedIds.has(w.id) ? "bg-closet-blush/30" : ""}`}
+                    >
+                      <td className="!pl-4 !pr-1 py-3.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(w.id)}
+                          onChange={() => toggleSelected(w.id)}
+                          className="h-4 w-4 accent-closet-rose"
+                          aria-label={`Select ${w.character || w.brand}`}
+                        />
+                      </td>
+                      <td className="px-4 py-3.5">
                         <span className="font-bold text-closet-brown">{w.brand}</span>
                       </td>
                       <td className="px-4 py-3.5">{w.character || "—"}</td>

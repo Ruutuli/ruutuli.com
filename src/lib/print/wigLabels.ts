@@ -76,13 +76,17 @@ export function sortLabelEntries(entries: WigLabelEntry[]): WigLabelEntry[] {
 
 export function buildWigLabelEntries(
   wigs: Wig[],
-  categories?: WigColorCategory[],
+  options?: { categories?: WigColorCategory[]; ids?: string[] },
 ): WigLabelEntry[] {
-  const allowed = categories?.length ? new Set(categories) : null;
+  const categories = options?.categories;
+  const ids = options?.ids;
+  const allowedCats = categories?.length ? new Set(categories) : null;
+  const allowedIds = ids?.length ? new Set(ids) : null;
   const entries: WigLabelEntry[] = [];
 
   for (const wig of wigs) {
-    if (allowed && !allowed.has(categorizeWigColor(wig.color))) continue;
+    if (allowedIds && !allowedIds.has(wig.id)) continue;
+    if (allowedCats && !allowedCats.has(categorizeWigColor(wig.color))) continue;
     entries.push(toEntry(wig));
   }
 

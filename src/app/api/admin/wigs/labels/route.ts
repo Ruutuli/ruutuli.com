@@ -27,6 +27,18 @@ function parseCategories(raw: string | null): WigColorCategory[] {
     .filter((value): value is WigColorCategory => VALID_CATEGORIES.has(value as WigColorCategory));
 }
 
+function parseIds(raw: string | null): string[] {
+  if (!raw?.trim()) return [];
+  return Array.from(
+    new Set(
+      raw
+        .split(/[,]+/)
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
     await requireAdmin();
@@ -37,12 +49,20 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format")?.trim().toLowerCase() ?? "html";
   const categories = parseCategories(searchParams.get("categories") ?? searchParams.get("category"));
+  const ids = parseIds(searchParams.get("ids"));
 
   const wigs = await getWigs();
-  const entries = buildWigLabelEntries(wigs, categories.length > 0 ? categories : undefined);
+  const entries = buildWigLabelEntries(wigs, {
+    categories: categories.length > 0 ? categories : undefined,
+    ids: ids.length > 0 ? ids : undefined,
+  });
 
   if (entries.length === 0) {
-    return badRequest("No wigs matched the requested color categories");
+    return badRequest(
+      ids.length > 0
+        ? "No wigs matched the selected labels"
+        : "No wigs matched the requested color categories",
+    );
   }
 
   if (format === "json") {
