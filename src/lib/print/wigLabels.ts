@@ -37,16 +37,40 @@ function toEntry(wig: Wig): WigLabelEntry {
   };
 }
 
-/** Character first, then brand, then color — readable sheet order. */
+const COLOR_CATEGORY_ORDER: WigColorCategory[] = [
+  "pink",
+  "red",
+  "orange",
+  "blonde",
+  "green",
+  "blue",
+  "purple",
+  "black",
+  "gray",
+  "white",
+  "brown",
+];
+
+const COLOR_CATEGORY_RANK = new Map(
+  COLOR_CATEGORY_ORDER.map((id, index) => [id, index]),
+);
+
+/** Color family first (same order as print cards), then color name, then character. */
 export function sortLabelEntries(entries: WigLabelEntry[]): WigLabelEntry[] {
   return [...entries].sort((a, b) => {
+    const aCat = COLOR_CATEGORY_RANK.get(categorizeWigColor(a.color)) ?? 99;
+    const bCat = COLOR_CATEGORY_RANK.get(categorizeWigColor(b.color)) ?? 99;
+    if (aCat !== bCat) return aCat - bCat;
+
+    const color = a.color.localeCompare(b.color);
+    if (color !== 0) return color;
+
     const aTitle = (a.character || a.brand).toLowerCase();
     const bTitle = (b.character || b.brand).toLowerCase();
     const title = aTitle.localeCompare(bTitle);
     if (title !== 0) return title;
-    const brand = a.brand.localeCompare(b.brand);
-    if (brand !== 0) return brand;
-    return a.color.localeCompare(b.color);
+
+    return a.brand.localeCompare(b.brand);
   });
 }
 
@@ -316,7 +340,7 @@ export function renderWigLabelsHtml(
   const sheetCount = sheets.length;
   const sheetMarkup = sheets.map((cells, i) => renderSheet(cells, i, sheetCount)).join("");
   const sheetLabel = sheetCount === 1 ? "1 sheet" : `${sheetCount} sheets`;
-  const countLabel = `${entries.length} label${entries.length === 1 ? "" : "s"} · ${sheetLabel} · Avery 5260 (30-up)`;
+  const countLabel = `${entries.length} label${entries.length === 1 ? "" : "s"} · ${sheetLabel} · Avery 5260 (30-up) · sorted by color`;
 
   return `<!DOCTYPE html>
 <html lang="en">
