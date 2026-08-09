@@ -9,9 +9,23 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteConfig();
+  const title = "Cosplay Roster";
+  const description = `Cosplay portfolio by ${site.displayName} — characters and builds from planned to completed.`;
+
   return {
-    title: `Character Roster | ${site.name}`,
-    description: "Characters I've cosplayed, by status.",
+    title,
+    description,
+    alternates: { canonical: "/roster" },
+    openGraph: {
+      title: `${title} | ${site.name}`,
+      description,
+      url: "/roster",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | ${site.name}`,
+      description,
+    },
   };
 }
 

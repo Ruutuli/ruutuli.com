@@ -5,3 +5,10 @@ export function getSiteUrl(): string {
   if (raw) return raw.replace(/\/$/, "");
   return DEFAULT_SITE_URL;
 }
+
+/** Absolute URL for a site path (leading slash optional). */
+export function absoluteUrl(path = "/"): string {
+  const base = getSiteUrl();
+  if (!path || path === "/") return base;
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}

@@ -10,8 +10,15 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteConfig();
   return {
-    title: `To-Do List | ${site.name}`,
+    title: "To-Do List",
     description: "All build to-dos across active cosplays — open tasks, buys, and checks.",
+    robots: { index: false, follow: false },
+    alternates: { canonical: "/todos" },
+    openGraph: {
+      title: `To-Do List | ${site.name}`,
+      description: "Build to-dos across active cosplays.",
+      url: "/todos",
+    },
   };
 }
 

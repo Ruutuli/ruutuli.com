@@ -17,9 +17,23 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteConfig();
+  const title = "Media Kit";
+  const description = `Media kit for ${site.displayName} — stats, portfolio, and collaboration info for brands, conventions, and creators.`;
+
   return {
-    title: `Media Kit | ${site.name}`,
-    description: "Stats, portfolio, and collaboration info for brands, conventions, and creators.",
+    title,
+    description,
+    alternates: { canonical: "/media-kit" },
+    openGraph: {
+      title: `${title} | ${site.name}`,
+      description,
+      url: "/media-kit",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | ${site.name}`,
+      description,
+    },
   };
 }
 

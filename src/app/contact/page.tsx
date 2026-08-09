@@ -9,9 +9,23 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteConfig();
+  const title = "Contact";
+  const description = `Get in touch with ${site.displayName} for collaborations, conventions, and inquiries.`;
+
   return {
-    title: `Contact | ${site.name}`,
-    description: "Get in touch for collaborations, conventions, and inquiries.",
+    title,
+    description,
+    alternates: { canonical: "/contact" },
+    openGraph: {
+      title: `${title} | ${site.name}`,
+      description,
+      url: "/contact",
+    },
+    twitter: {
+      card: "summary",
+      title: `${title} | ${site.name}`,
+      description,
+    },
   };
 }
 

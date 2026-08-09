@@ -26,9 +26,9 @@ export const siteAssets = {
 export const defaultSiteSettings: SiteSettings = {
   name: "Ruutuli",
   displayName: "Ruutuli",
-  tagline: "personal site",
+  tagline: "cosplay & builds",
   roles: "Artist || Cosplayer || Live2D Rigger || Gamer",
-  bio: "The place where I put things and pretend I know what I'm doing.",
+  bio: "Casual cosplayer sharing builds, conventions, and the chaos between — wigs, hot glue, and stubbornness.",
   contactEmail: "ruutulian@gmail.com",
   socials: {
     instagram: "https://www.instagram.com/ruutuli/",

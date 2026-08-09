@@ -118,55 +118,41 @@ export default function AboutView() {
           <div className="text-center lg:text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-closet-rose">shops & lists</p>
             <h2 className="mt-2 font-sans text-2xl font-bold text-closet-brown sm:text-3xl">Resources</h2>
-            <p className="mt-2 max-w-2xl text-base leading-relaxed text-closet-brown-light">
-              Places I actually buy from, models I trust, and Amazon lists for stuff I use, buy, or want.
-            </p>
           </div>
 
           <article className="closet-panel-outer">
-            <div className="closet-panel-header">
-              <h3 className="flex-1 font-sans text-xl font-bold text-closet-brown">Contacts</h3>
-            </div>
-            <div className="closet-panel-body">
-              <p className="text-base leading-relaxed text-closet-brown-light">
-                I buy all my contacts from{" "}
-                <ExternalLink href="https://ohmykitty4u.com/">OhMyKitty</ExternalLink>.
-              </p>
-            </div>
-          </article>
+            <div className="closet-panel-body divide-y divide-closet-rose/10">
+              <div className="space-y-2 pb-5">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-closet-rose">Contacts</h3>
+                <p className="text-base leading-relaxed text-closet-brown-light">
+                  I buy all my contacts from{" "}
+                  <ExternalLink href="https://ohmykitty4u.com/">OhMyKitty</ExternalLink>.
+                </p>
+              </div>
 
-          <article className="closet-panel-outer">
-            <div className="closet-panel-header">
-              <h3 className="flex-1 font-sans text-xl font-bold text-closet-brown">3D Models</h3>
-            </div>
-            <div className="closet-panel-body space-y-3">
-              <p className="text-base leading-relaxed text-closet-brown-light">
-                I highly recommend{" "}
-                <ExternalLink href="https://dangerousladies.ca/">Dangerous Ladies</ExternalLink> for 3D
-                models.
-              </p>
-              <p className="text-base leading-relaxed text-closet-brown-light">
-                Otherwise I use{" "}
-                <ExternalLink href="https://cults3d.com/">Cults3D</ExternalLink> a lot for finding models.
-              </p>
-            </div>
-          </article>
+              <div className="space-y-2 py-5">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-closet-rose">3D Models</h3>
+                <p className="text-base leading-relaxed text-closet-brown-light">
+                  I highly recommend{" "}
+                  <ExternalLink href="https://dangerousladies.ca/">Dangerous Ladies</ExternalLink> for 3D
+                  models. Otherwise I use{" "}
+                  <ExternalLink href="https://cults3d.com/">Cults3D</ExternalLink> a lot for finding models.
+                </p>
+              </div>
 
-          <article className="closet-panel-outer">
-            <div className="closet-panel-header">
-              <h3 className="flex-1 font-sans text-xl font-bold text-closet-brown">Amazon Wishlists</h3>
-            </div>
-            <div className="closet-panel-body space-y-3">
-              <p className="text-base leading-relaxed text-closet-brown-light">
-                Stuff I use, buy, or want — peek at your own risk:
-              </p>
-              <ul className="space-y-1.5">
-                {amazonWishlists.map((list) => (
-                  <li key={list.label}>
-                    <ExternalLink href={list.href}>{list.label}</ExternalLink>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-2 pt-5">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-closet-rose">Amazon Wishlists</h3>
+                <p className="text-base leading-relaxed text-closet-brown-light">
+                  Stuff I use, buy, or want:
+                </p>
+                <ul className="space-y-1.5">
+                  {amazonWishlists.map((list) => (
+                    <li key={list.label}>
+                      <ExternalLink href={list.href}>{list.label}</ExternalLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </article>
         </section>

@@ -613,11 +613,6 @@ export default function CosplayBoard({
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 7l2-3h8l2 3v11a2 2 0 01-2 2H8a2 2 0 01-2-2V7z" />
       </svg>
     ),
-    convention: (
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    ),
     prop: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
         <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 4L20 9.5 9.5 20 4 14.5 14.5 4z" />
@@ -873,7 +868,7 @@ export default function CosplayBoard({
                   characterName={cosplay.character}
                   variant="compact"
                   maxVisible={4}
-                  getFallbackLabel={(src, i) => cosplay.convention || labelPhoto(src, i)}
+                  getFallbackLabel={labelPhoto}
                   emptyMessage="No photos tagged yet."
                 />
               </div>
@@ -889,11 +884,6 @@ export default function CosplayBoard({
                 {showOutfit && (
                   <DetailRow label="Outfit" value={cosplay.outfit!} icon={detailIcons.outfit} />
                 )}
-                <DetailRow
-                  label="Convention"
-                  value={cosplay.convention || "—"}
-                  icon={detailIcons.convention}
-                />
                 <DetailRow
                   label={props.length === 1 ? "Prop" : "Props"}
                   value={props.length ? props.map((p) => p.name).join(", ") : "None"}
@@ -1088,11 +1078,8 @@ export default function CosplayBoard({
       {/* Gallery */}
       {tab === "convention" && (
         <section className="cosplan-panel overflow-hidden">
-          <div className="cosplan-panel-header justify-between">
+          <div className="cosplan-panel-header">
             <h2 className="font-sans text-base font-bold text-closet-brown">Gallery</h2>
-            {cosplay.convention && (
-              <span className="text-xs font-semibold text-closet-rose">{cosplay.convention}</span>
-            )}
           </div>
           <div className="p-4 sm:p-6">
             {conventionPhotos.length === 0 ? (
@@ -1104,7 +1091,7 @@ export default function CosplayBoard({
                 photos={conventionPhotos}
                 photoCredits={photoCredits}
                 characterName={cosplay.character}
-                getFallbackLabel={(src, i) => cosplay.convention || labelPhoto(src, i)}
+                getFallbackLabel={labelPhoto}
                 emptyMessage="Nothing here yet."
               />
             )}

@@ -49,9 +49,9 @@ export default function RosterView({ cosplays }: { cosplays: Cosplay[] }) {
   return (
     <div className="closet-shell">
       <SectionHeading
-        eyebrow="Character Roster"
-        title="Cosplayed Characters"
-        description="Tap and hold to peek at the cosplay photo. Click to open the build page."
+        eyebrow="Cosplay portfolio"
+        title="Cosplay Roster"
+        description="Characters I've cosplayed — tap and hold to peek at a photo, click to open the build page."
       />
 
       <div className="mb-10 flex flex-col gap-5">
