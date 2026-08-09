@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   buildImageLoadAttempts,
@@ -206,8 +207,12 @@ function BannerSlot({ image }: { image: GalleryBannerPhoto }) {
     [fadeActive, incoming],
   );
 
-  return (
-    <div className="mediakit-banner-slot relative h-full min-w-0 overflow-hidden bg-closet-blush/15">
+  const linkedPhoto = incoming ?? visible;
+  const cosplayId = linkedPhoto.cosplayId?.trim();
+  const href = cosplayId ? `/roster/${cosplayId}` : null;
+
+  const images = (
+    <>
       <div className="absolute inset-0">
         <BannerImage photo={visible} />
       </div>
@@ -222,8 +227,25 @@ function BannerSlot({ image }: { image: GalleryBannerPhoto }) {
           <BannerImage photo={incoming} onReady={handleIncomingReady} />
         </div>
       )}
-    </div>
+    </>
   );
+
+  const slotClassName =
+    "mediakit-banner-slot relative block h-full min-w-0 overflow-hidden bg-closet-blush/15 transition-[filter] duration-300 hover:brightness-[1.06]";
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={slotClassName}
+        aria-label={linkedPhoto.alt?.trim() || "View cosplay"}
+      >
+        {images}
+      </Link>
+    );
+  }
+
+  return <div className={slotClassName}>{images}</div>;
 }
 
 export default function MediaKitPhotoBanner({ photos }: { photos: GalleryBannerPhoto[] }) {
