@@ -22,6 +22,8 @@ import {
   resolveCosplayTodoDisplay,
   todoLinkHostname,
 } from "@/lib/cosplay/todos";
+import { getCosplayDisplayImage, isCosplayPlaceholderImage } from "@/lib/cosplay/images";
+import RosterImageSlot from "./RosterImageSlot";
 import SectionHeading from "./SectionHeading";
 
 type StatusFilter = "open" | "done" | "all";
@@ -224,11 +226,33 @@ export default function TodosView({
       ) : (
         <div className="animate-fade-up space-y-5">
           {grouped.map(([cosplayId, { character, series, outfit, items }]) => {
+            const cosplay = activeCosplays.find((c) => c.id === cosplayId);
             const cosplayOpen = getOpenCosplayTodos(items).length;
             const subtitle = formatCosplayBuildSubtitle({ series, outfit });
+            const imageSrc = cosplay
+              ? getCosplayDisplayImage(cosplay.image, cosplay.characterArt, ...(cosplay.gallery ?? []))
+              : null;
+            const usingCosplayPhoto = cosplay && !isCosplayPlaceholderImage(cosplay.image);
+            const objectPosition = usingCosplayPhoto
+              ? (cosplay.imagePosition ?? "center top")
+              : (cosplay?.characterArtPosition ?? "center top");
             return (
               <section key={cosplayId} className="closet-panel-outer overflow-hidden">
                 <div className="closet-panel-header !items-center">
+                  <Link
+                    href={`/roster/${cosplayId}`}
+                    className="relative h-14 w-12 shrink-0 overflow-hidden rounded-xl border border-closet-pink/50 bg-closet-blush/40 shadow-sm sm:h-16 sm:w-14"
+                    aria-label={`Open ${character} build page`}
+                  >
+                    <RosterImageSlot
+                      src={imageSrc}
+                      alt={character}
+                      emptyLabel={character}
+                      className="object-cover"
+                      objectPosition={objectPosition}
+                      sizes="56px"
+                    />
+                  </Link>
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/roster/${cosplayId}`}

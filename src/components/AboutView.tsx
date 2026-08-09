@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 import ScallopHeroFrame from "@/components/ScallopHeroFrame";
@@ -13,12 +14,42 @@ const aboutFacts = [
   { label: "Fur Babies", value: "Pascal & Bobby" },
 ] as const;
 
+const amazonWishlists = [
+  {
+    label: "3D Printing",
+    href: "https://www.amazon.com/hz/wishlist/ls/1MONU2BP01869?ref_=wl_share",
+  },
+  {
+    label: "Craft Room",
+    href: "https://www.amazon.com/hz/wishlist/ls/1MONU2BP01869?ref_=wl_share",
+  },
+  {
+    label: "Cosplay General",
+    href: "https://www.amazon.com/hz/wishlist/ls/1MONU2BP01869?ref_=wl_share",
+  },
+  {
+    label: "Cosplay Wig",
+    href: "https://www.amazon.com/hz/wishlist/ls/1MONU2BP01869?ref_=wl_share",
+  },
+] as const;
+
+const resourceLinkClassName =
+  "font-medium text-closet-rose underline decoration-closet-rose/40 underline-offset-2 transition-colors hover:decoration-closet-rose";
+
 function FactRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 border-b border-closet-rose/10 py-3 last:border-b-0 sm:flex-row sm:items-baseline sm:gap-4">
       <dt className="shrink-0 text-sm font-bold uppercase tracking-wide text-closet-rose sm:w-36">{label}</dt>
       <dd className="text-base font-medium text-closet-brown">{value}</dd>
     </div>
+  );
+}
+
+function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={resourceLinkClassName}>
+      {children}
+    </a>
   );
 }
 
@@ -82,6 +113,63 @@ export default function AboutView() {
             </p>
           </div>
         </article>
+
+        <section id="resources" className="scroll-mt-24 space-y-4">
+          <div className="text-center lg:text-left">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-closet-rose">shops & lists</p>
+            <h2 className="mt-2 font-sans text-2xl font-bold text-closet-brown sm:text-3xl">Resources</h2>
+            <p className="mt-2 max-w-2xl text-base leading-relaxed text-closet-brown-light">
+              Places I actually buy from, models I trust, and Amazon lists for stuff I use, buy, or want.
+            </p>
+          </div>
+
+          <article className="closet-panel-outer">
+            <div className="closet-panel-header">
+              <h3 className="flex-1 font-sans text-xl font-bold text-closet-brown">Contacts</h3>
+            </div>
+            <div className="closet-panel-body">
+              <p className="text-base leading-relaxed text-closet-brown-light">
+                I buy all my contacts from{" "}
+                <ExternalLink href="https://ohmykitty4u.com/">OhMyKitty</ExternalLink>.
+              </p>
+            </div>
+          </article>
+
+          <article className="closet-panel-outer">
+            <div className="closet-panel-header">
+              <h3 className="flex-1 font-sans text-xl font-bold text-closet-brown">3D Models</h3>
+            </div>
+            <div className="closet-panel-body space-y-3">
+              <p className="text-base leading-relaxed text-closet-brown-light">
+                I highly recommend{" "}
+                <ExternalLink href="https://dangerousladies.ca/">Dangerous Ladies</ExternalLink> for 3D
+                models.
+              </p>
+              <p className="text-base leading-relaxed text-closet-brown-light">
+                Otherwise I use{" "}
+                <ExternalLink href="https://cults3d.com/">Cults3D</ExternalLink> a lot for finding models.
+              </p>
+            </div>
+          </article>
+
+          <article className="closet-panel-outer">
+            <div className="closet-panel-header">
+              <h3 className="flex-1 font-sans text-xl font-bold text-closet-brown">Amazon Wishlists</h3>
+            </div>
+            <div className="closet-panel-body space-y-3">
+              <p className="text-base leading-relaxed text-closet-brown-light">
+                Stuff I use, buy, or want — peek at your own risk:
+              </p>
+              <ul className="space-y-1.5">
+                {amazonWishlists.map((list) => (
+                  <li key={list.label}>
+                    <ExternalLink href={list.href}>{list.label}</ExternalLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </article>
+        </section>
 
         <section id="faq" className="scroll-mt-24 space-y-4">
           <div className="text-center lg:text-left">
