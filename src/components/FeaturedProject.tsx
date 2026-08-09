@@ -4,6 +4,7 @@ import { formatCalendarEventDates, formatEventDate, getNextConvention } from "@/
 import { getCosplayProgressPercent, getSpotlightCosplay } from "@/lib/siteConfig";
 import { Cosplay } from "@/types/cosplay";
 import { ConEvent } from "@/types/event";
+import CheerButton from "@/components/CheerButton";
 import RosterImageSlot from "@/components/RosterImageSlot";
 
 function SideCardIcon({ children }: { children: ReactNode }) {
@@ -35,26 +36,27 @@ export default function FeaturedProject({
   const overall = cosplay ? getCosplayProgressPercent(cosplay) : 0;
   const showOutfit = cosplay?.outfit && cosplay.outfit.toLowerCase() !== "default";
   const artPosition = cosplay?.characterArtPosition ?? "center bottom";
+  const canCheer =
+    cosplay != null && (cosplay.status === "planned" || cosplay.status === "in-progress");
 
   return (
     <div id="dashboard" className="cosplan-dashboard-top animate-fade-up gap-4 sm:gap-6">
       {/* Current Build — 8 columns on desktop */}
       {cosplay ? (
-        <Link
-          href={`/roster/${cosplay.id}`}
-          className="cosplan-focus-ring group col-span-12 flex h-full flex-col overflow-hidden rounded-3xl border border-closet-pink/35 bg-white shadow-closet transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/25 hover:shadow-closet-lg sm:flex-row lg:col-span-8"
-        >
+        <article className="group col-span-12 flex h-full flex-col overflow-hidden rounded-3xl border border-closet-pink/35 bg-white shadow-closet transition-all duration-300 hover:-translate-y-0.5 hover:border-closet-rose/25 hover:shadow-closet-lg sm:flex-row lg:col-span-8">
           <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
             <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-closet-rose">
               Current Build
             </p>
-            <h2 className="mt-1 font-display text-2xl font-bold leading-tight text-closet-brown sm:text-[1.75rem]">
-              {cosplay.character}
-            </h2>
-            <p className="mt-0.5 text-xs text-closet-brown-light">
-              {cosplay.series}
-              {showOutfit ? ` · ${cosplay.outfit}` : ""}
-            </p>
+            <Link href={`/roster/${cosplay.id}`} className="cosplan-focus-ring mt-1 block rounded-lg">
+              <h2 className="font-display text-2xl font-bold leading-tight text-closet-brown sm:text-[1.75rem]">
+                {cosplay.character}
+              </h2>
+              <p className="mt-0.5 text-xs text-closet-brown-light">
+                {cosplay.series}
+                {showOutfit ? ` · ${cosplay.outfit}` : ""}
+              </p>
+            </Link>
             {cosplay.deadline && (
               <div className="mt-2">
                 <span className="rounded-full bg-closet-rose/90 px-2.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wider text-white">
@@ -75,13 +77,26 @@ export default function FeaturedProject({
               />
             </div>
 
-            <span className="cosplan-focus-ring mt-auto flex items-center justify-between border-t border-closet-pink/35 pt-4 text-sm font-semibold text-closet-rose transition-colors group-hover:text-closet-mauve">
+            {canCheer ? (
+              <div className="mt-4">
+                <CheerButton cosplayId={cosplay.id} eligible variant="compact" />
+              </div>
+            ) : null}
+
+            <Link
+              href={`/roster/${cosplay.id}`}
+              className="cosplan-focus-ring mt-auto flex items-center justify-between border-t border-closet-pink/35 pt-4 text-sm font-semibold text-closet-rose transition-colors hover:text-closet-mauve"
+            >
               Open board
               <ChevronRight />
-            </span>
+            </Link>
           </div>
 
-          <div className="relative h-36 w-full shrink-0 sm:h-auto sm:w-[34%] sm:max-w-[200px] md:max-w-[220px] lg:max-w-[240px]" aria-hidden>
+          <Link
+            href={`/roster/${cosplay.id}`}
+            className="relative h-36 w-full shrink-0 sm:h-auto sm:w-[34%] sm:max-w-[200px] md:max-w-[220px] lg:max-w-[240px]"
+            aria-label={`Open ${cosplay.character} build page`}
+          >
             <RosterImageSlot
               src={cosplay.characterArt}
               alt={`${cosplay.character} character art`}
@@ -93,8 +108,8 @@ export default function FeaturedProject({
               priority
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white via-white/25 to-transparent" />
-          </div>
-        </Link>
+          </Link>
+        </article>
       ) : (
         <article className="col-span-12 flex min-h-[220px] flex-col justify-center rounded-3xl border border-closet-pink/35 bg-white p-6 shadow-closet lg:col-span-8">
           <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-closet-rose">Current Build</p>

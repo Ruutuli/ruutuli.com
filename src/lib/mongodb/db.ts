@@ -17,6 +17,8 @@ export const COLLECTIONS = {
   galleryExclusions: "gallery_exclusions",
   galleryVocabulary: "gallery_vocabulary",
   mediaKit: "media_kit",
+  cosplayCheers: "cosplay_cheers",
+  cheerVotes: "cheer_votes",
 } as const;
 
 export async function getDb(): Promise<Db> {
@@ -45,4 +47,9 @@ export async function ensureDbIndexes(): Promise<void> {
     { key: { name: 1 } },
   ]);
   await db.collection(COLLECTIONS.cosplays).createIndexes([{ key: { sortOrder: 1, character: 1 } }]);
+  await db.collection(COLLECTIONS.cosplayCheers).createIndexes([{ key: { cosplayId: 1 }, unique: true }]);
+  await db.collection(COLLECTIONS.cheerVotes).createIndexes([
+    { key: { cosplayId: 1, visitorId: 1, day: 1 }, unique: true },
+    { key: { visitorId: 1, day: 1 } },
+  ]);
 }

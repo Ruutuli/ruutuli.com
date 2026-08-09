@@ -29,6 +29,7 @@ import {
 import { GoogleDriveImage } from "@/components/GoogleDriveImage";
 import { GalleryPhotoCreditMap } from "@/lib/gallery/photoCredits";
 import CosplayPhotoGallery from "@/components/CosplayPhotoGallery";
+import CheerButton from "@/components/CheerButton";
 import RosterImageSlot from "@/components/RosterImageSlot";
 import { swatchNeedsBorderForName, wigSwatchBackground } from "@/lib/wigColors";
 
@@ -547,6 +548,7 @@ export default function CosplayBoard({
   const [tab, setTab] = useState<BoardTab>("overview");
 
   const isRetired = cosplay.status === "retired";
+  const canCheer = cosplay.status === "planned" || cosplay.status === "in-progress";
   const overall = isRetired ? 0 : getCosplayProgressPercent(cosplay, todos);
   const partsPercent = getCosplayPartsPercent(cosplay);
   const doneTasks = todos.filter(isCosplayTodoDone).length;
@@ -720,6 +722,10 @@ export default function CosplayBoard({
                 {openTasks.length > 0 ? ` (${openTasks.length})` : ""}
               </button>
             </div>
+
+            {canCheer ? (
+              <CheerButton cosplayId={cosplay.id} eligible variant="hero" className="pt-1" />
+            ) : null}
 
             {(cosplay.deadline || (!isRetired && partsPercent !== null) || (todos.length > 0 && !isRetired)) && (
               <div className="flex flex-wrap gap-2">

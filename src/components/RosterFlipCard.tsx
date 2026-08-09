@@ -5,6 +5,7 @@ import { Cosplay, CosplayStatus } from "@/types/cosplay";
 import { getCosplayProgressPercent } from "@/lib/siteConfig";
 import { GoogleDriveImage } from "./GoogleDriveImage";
 import { isCosplayPlaceholderImage } from "@/lib/cosplay/images";
+import CheerButton from "./CheerButton";
 
 const statusLabels: Record<CosplayStatus, string> = {
   completed: "Complete",
@@ -22,6 +23,7 @@ const statusStyles: Record<CosplayStatus, string> = {
 
 interface RosterFlipCardProps {
   cosplay: Cosplay;
+  initialCheerCount?: number;
 }
 
 function CardMeta({ cosplay, subtitle }: { cosplay: Cosplay; subtitle?: string }) {
@@ -152,42 +154,56 @@ function CardFace({
   );
 }
 
-export default function RosterFlipCard({ cosplay }: RosterFlipCardProps) {
+export default function RosterFlipCard({ cosplay, initialCheerCount = 0 }: RosterFlipCardProps) {
   const progress = getCosplayProgressPercent(cosplay);
+  const canCheer = cosplay.status === "planned" || cosplay.status === "in-progress";
 
   return (
-    <Link
-      href={`/roster/${cosplay.id}`}
-      className="group roster-flip-card focus:outline-none focus-visible:ring-2 focus-visible:ring-closet-pink focus-visible:ring-offset-2"
-      aria-label={`Open ${cosplay.character} build page`}
-    >
-      <div className="roster-flip-shell">
-        <div className="roster-flip-inner">
-          <div className="roster-flip-face roster-flip-face-front">
-            <CardFace
-              cosplay={cosplay}
-              progress={progress}
-              showHint
-              imageSrc={cosplay.characterArt}
-              imageAlt={`${cosplay.character} character art`}
-              emptyHint="No reference art"
-              imageClassName="object-contain object-center p-2 sm:p-3"
-            />
-          </div>
+    <div className="group relative h-full">
+      <Link
+        href={`/roster/${cosplay.id}`}
+        className="roster-flip-card block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-closet-pink focus-visible:ring-offset-2"
+        aria-label={`Open ${cosplay.character} build page`}
+      >
+        <div className="roster-flip-shell">
+          <div className="roster-flip-inner">
+            <div className="roster-flip-face roster-flip-face-front">
+              <CardFace
+                cosplay={cosplay}
+                progress={progress}
+                showHint
+                imageSrc={cosplay.characterArt}
+                imageAlt={`${cosplay.character} character art`}
+                emptyHint="No reference art"
+                imageClassName="object-contain object-center p-2 sm:p-3"
+              />
+            </div>
 
-          <div className="roster-flip-face roster-flip-face-back">
-            <CardFace
-              cosplay={cosplay}
-              progress={progress}
-              subtitle="Cosplay photo"
-              imageSrc={cosplay.image}
-              imageAlt={`${cosplay.character} cosplay`}
-              emptyHint="No cosplay photo"
-              imageClassName="object-cover object-top"
-            />
+            <div className="roster-flip-face roster-flip-face-back">
+              <CardFace
+                cosplay={cosplay}
+                progress={progress}
+                subtitle="Cosplay photo"
+                imageSrc={cosplay.image}
+                imageAlt={`${cosplay.character} cosplay`}
+                emptyHint="No cosplay photo"
+                imageClassName="object-cover object-top"
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+
+      {canCheer ? (
+        <div className="pointer-events-auto absolute bottom-[5.35rem] left-2.5 z-20 sm:bottom-[5.6rem] sm:left-3">
+          <CheerButton
+            cosplayId={cosplay.id}
+            eligible
+            initialCount={initialCheerCount}
+            variant="compact"
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }

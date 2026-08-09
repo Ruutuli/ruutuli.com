@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Cosplay, CosplayStatus } from "@/types/cosplay";
 import { COSPLAY_SORT_OPTIONS, CosplaySortBy, sortCosplays } from "@/lib/cosplay/sort";
 import RosterFlipCard from "./RosterFlipCard";
@@ -15,10 +15,51 @@ const statusLabels: Record<CosplayStatus, string> = {
   retired: "Retired",
 };
 
+function isCheerable(status: CosplayStatus) {
+  return status === "planned" || status === "in-progress";
+}
+
 export default function RosterView({ cosplays }: { cosplays: Cosplay[] }) {
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<CosplaySortBy>("custom");
+  const [cheerCounts, setCheerCounts] = useState<Record<string, number>>({});
+
+  const unfinishedIdsKey = useMemo(
+    () =>
+      cosplays
+        .filter((c) => isCheerable(c.status))
+        .map((c) => c.id)
+        .join(","),
+    [cosplays],
+  );
+
+  useEffect(() => {
+    if (!unfinishedIdsKey) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const res = await fetch(`/api/public/cheers?ids=${encodeURIComponent(unfinishedIdsKey)}`);
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as {
+          cheers?: Record<string, { count?: number }>;
+        };
+        if (!data.cheers || cancelled) return;
+        const next: Record<string, number> = {};
+        for (const [id, entry] of Object.entries(data.cheers)) {
+          next[id] = typeof entry.count === "number" ? entry.count : 0;
+        }
+        setCheerCounts(next);
+      } catch {
+        /* ignore */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [unfinishedIdsKey]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -51,7 +92,7 @@ export default function RosterView({ cosplays }: { cosplays: Cosplay[] }) {
       <SectionHeading
         eyebrow="Cosplay portfolio"
         title="Cosplay Roster"
-        description="Characters I've cosplayed — tap and hold to peek at a photo, click to open the build page."
+        description="Characters I've cosplayed — tap and hold to peek at a photo, click to open the build page. Cheer unfinished builds to nudge them along!"
       />
 
       <div className="mb-10 flex flex-col gap-5">
@@ -114,7 +155,7 @@ export default function RosterView({ cosplays }: { cosplays: Cosplay[] }) {
         <div className="animate-stagger-safe grid grid-cols-2 items-stretch gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 xl:gap-7">
           {filtered.map((cosplay) => (
             <div key={cosplay.id} className="h-full">
-              <RosterFlipCard cosplay={cosplay} />
+              <RosterFlipCard cosplay={cosplay} initialCheerCount={cheerCounts[cosplay.id] ?? 0} />
             </div>
           ))}
         </div>

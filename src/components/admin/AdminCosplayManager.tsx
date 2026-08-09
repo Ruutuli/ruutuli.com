@@ -35,13 +35,20 @@ import {
 
 const STATUSES: CosplayStatus[] = ["planned", "in-progress", "completed", "retired"];
 
-type SortColumn = "character" | "series" | "status" | "progress";
+type AdminSortBy = CosplaySortBy | "cheers-desc" | "cheers-asc";
+type SortColumn = "character" | "series" | "status" | "progress" | "cheers";
 
-function sortLabel(sortBy: CosplaySortBy): string | undefined {
-  return COSPLAY_SORT_OPTIONS.find((o) => o.value === sortBy)?.label;
+const ADMIN_SORT_OPTIONS: { value: AdminSortBy; label: string }[] = [
+  ...COSPLAY_SORT_OPTIONS,
+  { value: "cheers-desc", label: "Cheers high → low" },
+  { value: "cheers-asc", label: "Cheers low → high" },
+];
+
+function sortLabel(sortBy: AdminSortBy): string | undefined {
+  return ADMIN_SORT_OPTIONS.find((o) => o.value === sortBy)?.label;
 }
 
-function toggleColumnSort(current: CosplaySortBy, column: SortColumn): CosplaySortBy {
+function toggleColumnSort(current: AdminSortBy, column: SortColumn): AdminSortBy {
   switch (column) {
     case "character":
       return current === "character-asc" ? "character-desc" : "character-asc";
@@ -51,10 +58,12 @@ function toggleColumnSort(current: CosplaySortBy, column: SortColumn): CosplaySo
       return "status";
     case "progress":
       return current === "progress-desc" ? "progress-asc" : "progress-desc";
+    case "cheers":
+      return current === "cheers-desc" ? "cheers-asc" : "cheers-desc";
   }
 }
 
-function columnSortState(sortBy: CosplaySortBy, column: SortColumn): { active: boolean; direction?: "asc" | "desc" } {
+function columnSortState(sortBy: AdminSortBy, column: SortColumn): { active: boolean; direction?: "asc" | "desc" } {
   switch (column) {
     case "character":
       return {
@@ -73,6 +82,11 @@ function columnSortState(sortBy: CosplaySortBy, column: SortColumn): { active: b
         active: sortBy === "progress-desc" || sortBy === "progress-asc",
         direction: sortBy === "progress-desc" ? "desc" : sortBy === "progress-asc" ? "asc" : undefined,
       };
+    case "cheers":
+      return {
+        active: sortBy === "cheers-desc" || sortBy === "cheers-asc",
+        direction: sortBy === "cheers-desc" ? "desc" : sortBy === "cheers-asc" ? "asc" : undefined,
+      };
   }
 }
 
@@ -80,11 +94,13 @@ function CosplayMobileRow({
   cosplay,
   progress,
   partsLabel,
+  cheerCount,
   onDelete,
 }: {
   cosplay: Cosplay;
   progress: number;
   partsLabel: string | null;
+  cheerCount: number;
   onDelete: () => void;
 }) {
   return (
@@ -118,6 +134,11 @@ function CosplayMobileRow({
                 {progress}%{partsLabel ? ` · ${partsLabel}` : ""}
               </span>
             )}
+            {cheerCount > 0 ? (
+              <span className="text-xs font-semibold text-closet-rose" title="Finish cheers">
+                ♥ {cheerCount}
+              </span>
+            ) : null}
           </div>
         </div>
       </Link>
@@ -138,25 +159,35 @@ function CosplayMobileRow({
 
 export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }) {
   const [cosplays, setCosplays] = useState<Cosplay[]>(initial ?? []);
+  const [cheerCounts, setCheerCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(!initial?.length);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<CosplayStatus | "all">("all");
-  const [sortBy, setSortBy] = useState<CosplaySortBy>("custom");
+  const [sortBy, setSortBy] = useState<AdminSortBy>("custom");
   const [message, setMessage] = useState("");
   const [reordering, setReordering] = useState(false);
 
   useEffect(() => {
-    if (initial?.length) return;
-
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch("/api/admin/cosplays");
-        if (!res.ok) throw new Error("fetch failed");
-        const data = dedupeCosplaysById((await res.json()) as Cosplay[]);
-        if (!cancelled) setCosplays(data);
+        const [cosplayRes, cheerRes] = await Promise.all([
+          initial?.length ? Promise.resolve(null) : fetch("/api/admin/cosplays"),
+          fetch("/api/admin/cheers"),
+        ]);
+
+        if (!initial?.length) {
+          if (!cosplayRes?.ok) throw new Error("fetch failed");
+          const data = dedupeCosplaysById((await cosplayRes.json()) as Cosplay[]);
+          if (!cancelled) setCosplays(data);
+        }
+
+        if (cheerRes.ok) {
+          const cheerData = (await cheerRes.json()) as { cheerCounts?: Record<string, number> };
+          if (!cancelled && cheerData.cheerCounts) setCheerCounts(cheerData.cheerCounts);
+        }
       } catch {
-        if (!cancelled) setMessage("Could not load roster");
+        if (!cancelled && !initial?.length) setMessage("Could not load roster");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -180,8 +211,18 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
         c.id.toLowerCase().includes(q)
       );
     });
-    return sortCosplays(matched, sortBy);
-  }, [cosplays, query, statusFilter, sortBy]);
+
+    if (sortBy === "cheers-desc" || sortBy === "cheers-asc") {
+      const dir = sortBy === "cheers-desc" ? -1 : 1;
+      return [...matched].sort((a, b) => {
+        const diff = (cheerCounts[a.id] ?? 0) - (cheerCounts[b.id] ?? 0);
+        if (diff !== 0) return diff * dir;
+        return a.character.localeCompare(b.character);
+      });
+    }
+
+    return sortCosplays(matched, sortBy as CosplaySortBy);
+  }, [cosplays, query, statusFilter, sortBy, cheerCounts]);
 
   const pagination = useClientPagination(filtered, 25);
 
@@ -242,11 +283,7 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
   }
 
   function handleColumnSort(column: SortColumn) {
-    if (column === "character" || column === "series" || column === "progress") {
-      setSortBy(toggleColumnSort(sortBy, column));
-      return;
-    }
-    setSortBy("status");
+    setSortBy(toggleColumnSort(sortBy, column));
   }
 
   return (
@@ -282,8 +319,8 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
           <AdminSelect
             label="Sort by"
             value={sortBy}
-            onChange={(v) => setSortBy(v as CosplaySortBy)}
-            options={COSPLAY_SORT_OPTIONS}
+            onChange={(v) => setSortBy(v as AdminSortBy)}
+            options={ADMIN_SORT_OPTIONS}
             className="w-full min-w-[11rem] sm:w-auto"
           />
           <div className="flex flex-wrap gap-2 pb-0.5">
@@ -351,6 +388,7 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
                     cosplay={c}
                     progress={progress}
                     partsLabel={partsLabel}
+                    cheerCount={cheerCounts[c.id] ?? 0}
                     onDelete={() => remove(c.id)}
                   />
                 );
@@ -384,6 +422,11 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
                       label="Progress"
                       {...columnSortState(sortBy, "progress")}
                       onSort={() => handleColumnSort("progress")}
+                    />
+                    <AdminTableSortHeader
+                      label="Cheers"
+                      {...columnSortState(sortBy, "cheers")}
+                      onSort={() => handleColumnSort("cheers")}
                     />
                     <th className="px-4 py-3.5 font-bold">Spotlight</th>
                     <AdminTableActionsHeader className="!px-5" />
@@ -468,6 +511,9 @@ export default function AdminCosplayManager({ initial }: { initial?: Cosplay[] }
                               </span>
                             </div>
                           )}
+                        </td>
+                        <td className="px-4 py-3.5 tabular-nums text-sm font-semibold text-closet-brown">
+                          {cheerCounts[c.id] ?? 0}
                         </td>
                         <td className="px-4 py-3.5">
                           {c.spotlight ? (
