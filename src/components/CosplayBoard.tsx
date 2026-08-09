@@ -210,17 +210,6 @@ function DetailRow({
   );
 }
 
-function galleryLabel(src: string, index: number, parts?: CosplayPart[]): string {
-  const part = parts?.[index];
-  if (part) return part.name;
-  const file = src.split("/").pop()?.split("?")[0] ?? "";
-  const clean = file.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]/g, " ");
-  if (clean && clean !== "box-blank" && clean.length < 28) {
-    return clean.replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-  return `Photo ${index + 1}`;
-}
-
 function linkHostname(url: string): string | null {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -595,8 +584,6 @@ export default function CosplayBoard({
     [cosplay, cosplayPhotoFallbacks, referencePhotoFallbacks],
   );
 
-  const labelPhoto = (src: string, index: number) => galleryLabel(src, index, cosplay.parts);
-
   const detailIcons = {
     series: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
@@ -868,7 +855,6 @@ export default function CosplayBoard({
                   characterName={cosplay.character}
                   variant="compact"
                   maxVisible={4}
-                  getFallbackLabel={labelPhoto}
                   emptyMessage="No photos tagged yet."
                 />
               </div>
@@ -1044,7 +1030,6 @@ export default function CosplayBoard({
               photoCredits={photoCredits}
               characterName={cosplay.character}
               variant="build"
-              getFallbackLabel={labelPhoto}
               emptyMessage="Tag photos as Reference gallery in the admin to show detailed reference images here."
             />
           </div>
@@ -1068,7 +1053,6 @@ export default function CosplayBoard({
               photoCredits={photoCredits}
               characterName={cosplay.character}
               variant="build"
-              getFallbackLabel={labelPhoto}
               emptyMessage="Tag photos as Build gallery in the admin to show progress shots here."
             />
           </div>
@@ -1091,7 +1075,6 @@ export default function CosplayBoard({
                 photos={conventionPhotos}
                 photoCredits={photoCredits}
                 characterName={cosplay.character}
-                getFallbackLabel={labelPhoto}
                 emptyMessage="Nothing here yet."
               />
             )}

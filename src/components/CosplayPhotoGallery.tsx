@@ -13,12 +13,10 @@ type GalleryVariant = "standard" | "compact" | "featured" | "build";
 function CreditOverlay({
   src,
   credits,
-  fallback,
   compact = false,
 }: {
   src: string;
   credits: GalleryPhotoCreditMap;
-  fallback?: string;
   compact?: boolean;
 }) {
   const { where, who } = photoCreditLines(lookupPhotoCredit(src, credits));
@@ -26,14 +24,14 @@ function CreditOverlay({
 
   return (
     <>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-closet-brown/80 via-closet-brown/10 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
-      <div
-        className={`pointer-events-none absolute inset-x-0 bottom-0 text-white ${
-          compact ? "px-2.5 pb-2 pt-8" : "px-3.5 pb-3.5 pt-12 sm:px-4 sm:pb-4"
-        }`}
-      >
-        {hasCredit ? (
-          <>
+      {hasCredit && (
+        <>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-closet-brown/80 via-closet-brown/10 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 text-white ${
+              compact ? "px-2.5 pb-2 pt-8" : "px-3.5 pb-3.5 pt-12 sm:px-4 sm:pb-4"
+            }`}
+          >
             {where && (
               <p
                 className={`truncate font-semibold [text-shadow:0_1px_3px_rgba(0,0,0,0.45)] ${
@@ -52,17 +50,9 @@ function CreditOverlay({
                 📷 {who}
               </p>
             )}
-          </>
-        ) : fallback ? (
-          <p
-            className={`truncate font-semibold [text-shadow:0_1px_3px_rgba(0,0,0,0.45)] ${
-              compact ? "text-[0.65rem] uppercase tracking-wider" : "text-xs sm:text-sm"
-            }`}
-          >
-            {fallback}
-          </p>
-        ) : null}
-      </div>
+          </div>
+        </>
+      )}
       <span className="pointer-events-none absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-closet-brown/45 text-white opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100 group-focus-visible:opacity-100 sm:h-9 sm:w-9">
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -234,7 +224,6 @@ export default function CosplayPhotoGallery({
   characterName,
   emptyMessage = "No photos yet.",
   variant = "standard",
-  getFallbackLabel,
   className = "",
   maxVisible,
 }: {
@@ -243,7 +232,6 @@ export default function CosplayPhotoGallery({
   characterName: string;
   emptyMessage?: string;
   variant?: GalleryVariant;
-  getFallbackLabel?: (src: string, index: number) => string;
   className?: string;
   maxVisible?: number;
 }) {
@@ -270,7 +258,6 @@ export default function CosplayPhotoGallery({
       <div className={`${gridClass} ${className}`}>
         {visiblePhotos.map((src, i) => {
           const isFeaturedLead = variant === "featured" && i === 0;
-          const fallback = getFallbackLabel?.(src, i);
 
           return (
             <button
@@ -297,7 +284,7 @@ export default function CosplayPhotoGallery({
                 }
               />
               {variant !== "build" && (
-                <CreditOverlay src={src} credits={photoCredits} fallback={fallback} compact={variant === "compact"} />
+                <CreditOverlay src={src} credits={photoCredits} compact={variant === "compact"} />
               )}
             </button>
           );
