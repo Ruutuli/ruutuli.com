@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteConfig().catch(() => mergeSiteConfig(defaultSiteSettings));
   const titleDefault = `${site.name} | ${site.tagline}`;
   const description = site.bio;
-  const ogImage = siteAssets.avatar;
+  const ogImage = siteAssets.seoPreview;
 
   return {
     metadataBase: new URL(getSiteUrl()),

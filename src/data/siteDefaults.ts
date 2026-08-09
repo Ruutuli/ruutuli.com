@@ -8,6 +8,8 @@ export const siteAssets = {
   backgroundVideo: "/videos/bg-moving.mp4",
   backgroundImage: "/images/bg.png",
   avatar: "/images/ruubymei.png",
+  /** Default Open Graph / Twitter share preview */
+  seoPreview: "/images/ruu-birthday-2023.png",
   chibi: "/images/cheebruu.png",
   pageDoll: "/images/chibi-ruu.png",
   chibis: [

@@ -25,13 +25,13 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       url: "/",
-      images: [{ url: siteAssets.avatar, alt: `${site.displayName} cosplay` }],
+      images: [{ url: siteAssets.seoPreview, alt: `${site.displayName} cosplay` }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [siteAssets.avatar],
+      images: [siteAssets.seoPreview],
     },
   };
 }
