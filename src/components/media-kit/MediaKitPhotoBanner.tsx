@@ -57,9 +57,25 @@ function pickReplacement(
   return pickFrom[Math.floor(Math.random() * pickFrom.length)];
 }
 
+function shufflePhotos(photos: GalleryBannerPhoto[]): GalleryBannerPhoto[] {
+  const shuffled = [...photos];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 /** Stable, one-character-per-slot order for SSR + hydration. */
 function initialSlots(pool: GalleryBannerPhoto[], count: number): GalleryBannerPhoto[] {
   const unique = pickOnePerCharacter(pool);
+  if (unique.length === 0) return [];
+  return Array.from({ length: count }, (_, index) => unique[index % unique.length]);
+}
+
+/** Random one-character-per-slot order for each client visit / refresh. */
+function randomSlots(pool: GalleryBannerPhoto[], count: number): GalleryBannerPhoto[] {
+  const unique = shufflePhotos(pickOnePerCharacter(pool));
   if (unique.length === 0) return [];
   return Array.from({ length: count }, (_, index) => unique[index % unique.length]);
 }
@@ -257,6 +273,15 @@ export default function MediaKitPhotoBanner({ photos }: { photos: GalleryBannerP
 
   useEffect(() => {
     poolRef.current = pool;
+  }, [pool]);
+
+  // Randomize after hydration so each refresh shows a different starting set.
+  useEffect(() => {
+    if (pool.length === 0) {
+      setSlots([]);
+      return;
+    }
+    setSlots(randomSlots(pool, SLOT_COUNT));
   }, [pool]);
 
   useEffect(() => {
