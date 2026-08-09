@@ -56,7 +56,10 @@ const CATEGORY_ORDER: {
   { id: "brown", title: "Brown", accent: "#78350f" },
 ];
 
-const WIGS_PER_CARD = 14;
+/** 4×6 photo card — room for more rows than the old 3×5 layout. */
+const WIGS_PER_CARD = 18;
+const CARD_WIDTH_IN = 4;
+const CARD_HEIGHT_IN = 6;
 
 function escapeHtml(value: string): string {
   return value
@@ -152,27 +155,27 @@ function cardsForCategory(_category: WigColorCategory, entries: WigCardEntry[]):
   return chunkEntries(entries, WIGS_PER_CARD);
 }
 
-/** Scale type to fit every entry inside the 3×5 card body. */
-const CARD_BODY_HEIGHT_IN = 4.52;
+/** Scale type to fit every entry inside the 4×6 card body (below the hero). */
+const CARD_BODY_HEIGHT_IN = 5.25;
 
 function fitVarsForEntryCount(count: number, compactEntries: boolean): string {
-  for (let textPt = 7; textPt >= 4.25; textPt -= 0.25) {
-    const leading = textPt <= 4.75 ? 1.04 : textPt <= 5.5 ? 1.08 : textPt <= 6.25 ? 1.12 : 1.16;
+  for (let textPt = 9; textPt >= 5; textPt -= 0.25) {
+    const leading = textPt <= 5.5 ? 1.08 : textPt <= 6.5 ? 1.12 : textPt <= 7.5 ? 1.16 : 1.2;
     const lineIn = (textPt / 72) * leading;
     const secondaryIn = lineIn * (compactEntries ? 1 : 0.92);
-    const metaMtIn = textPt <= 5 ? 0.006 : 0.01;
-    const entryPadIn = textPt <= 5 ? 0.008 : textPt <= 6 ? 0.012 : 0.018;
-    const gapIn = textPt <= 5 ? 0.006 : textPt <= 6 ? 0.01 : 0.016;
+    const metaMtIn = textPt <= 6 ? 0.008 : 0.012;
+    const entryPadIn = textPt <= 6 ? 0.01 : textPt <= 7.5 ? 0.016 : 0.022;
+    const gapIn = textPt <= 6 ? 0.008 : textPt <= 7.5 ? 0.012 : 0.018;
 
     const entryIn =
       lineIn + (compactEntries ? metaMtIn + secondaryIn : metaMtIn + lineIn + metaMtIn + secondaryIn) + entryPadIn;
     const totalIn = count * entryIn + Math.max(0, count - 1) * gapIn;
 
     if (totalIn <= CARD_BODY_HEIGHT_IN) {
-      const titlePt = Math.max(6.5, Math.min(9, textPt + (count <= 8 ? 1.75 : 1.25)));
-      const heroPad = count >= 14 ? 0.055 : count >= 10 ? 0.065 : count >= 7 ? 0.075 : 0.085;
-      const swatch = count >= 12 ? 0.14 : count >= 8 ? 0.16 : 0.18;
-      const bodyPad = count >= 12 ? 0.03 : count >= 8 ? 0.04 : 0.05;
+      const titlePt = Math.max(10, Math.min(14, textPt + (count <= 10 ? 3 : 2)));
+      const heroPad = count >= 16 ? 0.07 : count >= 12 ? 0.085 : count >= 8 ? 0.1 : 0.12;
+      const swatch = count >= 16 ? 0.18 : count >= 12 ? 0.2 : 0.24;
+      const bodyPad = count >= 16 ? 0.05 : count >= 12 ? 0.06 : 0.08;
 
       return [
         `--wig-text:${textPt}pt`,
@@ -189,20 +192,20 @@ function fitVarsForEntryCount(count: number, compactEntries: boolean): string {
   }
 
   return [
-    "--wig-text:4.25pt",
-    "--wig-leading:1.03",
-    "--wig-title:6.5pt",
-    "--wig-gap:0.004in",
-    "--wig-entry-pad:0.006in",
-    "--wig-meta-mt:0.004in",
-    "--wig-hero-pad:0.05in",
-    "--wig-swatch:0.12in",
-    "--wig-body-pad:0.025in",
+    "--wig-text:5pt",
+    "--wig-leading:1.06",
+    "--wig-title:10pt",
+    "--wig-gap:0.006in",
+    "--wig-entry-pad:0.008in",
+    "--wig-meta-mt:0.006in",
+    "--wig-hero-pad:0.06in",
+    "--wig-swatch:0.16in",
+    "--wig-body-pad:0.04in",
   ].join(";");
 }
 
 function useCompactEntries(count: number): boolean {
-  return count >= 12;
+  return count >= 15;
 }
 
 export function buildWigColorCards(wigs: Wig[], categories?: WigColorCategory[]): WigColorCard[] {
@@ -318,12 +321,18 @@ const WIG_CARD_STYLES = `
 
   * { box-sizing: border-box; }
 
-  body {
+  html, body {
     margin: 0;
+    padding: 0;
+  }
+
+  body {
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     color: var(--wig-ink);
     background: linear-gradient(160deg, #f3eaee 0%, #e8dde4 100%);
     -webkit-font-smoothing: antialiased;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .print-toolbar {
@@ -360,19 +369,19 @@ const WIG_CARD_STYLES = `
   }
 
   .wig-sheet {
-    display: grid;
-    grid-template-columns: repeat(2, 3in);
-    gap: 0.2in;
-    padding: 0.25in;
-    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35in;
+    padding: 0.35in;
   }
 
   .wig-card {
-    width: 3in;
-    height: 5in;
+    width: ${CARD_WIDTH_IN}in;
+    height: ${CARD_HEIGHT_IN}in;
     display: flex;
     flex-direction: column;
-    font-size: var(--wig-text, 7pt);
+    font-size: var(--wig-text, 8pt);
     line-height: var(--wig-leading, 1.16);
     background: var(--wig-card-bg);
     border: 1px dashed var(--wig-line);
@@ -381,12 +390,19 @@ const WIG_CARD_STYLES = `
     box-shadow: 0 4px 18px rgba(61, 43, 31, 0.1);
     page-break-inside: avoid;
     break-inside: avoid;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .wig-card:last-child {
+    page-break-after: auto;
+    break-after: auto;
   }
 
   .wig-hero {
     flex-shrink: 0;
     position: relative;
-    padding: var(--wig-hero-pad, 0.085in) var(--wig-hero-pad, 0.085in) calc(var(--wig-hero-pad, 0.085in) * 0.82);
+    padding: var(--wig-hero-pad, 0.1in) var(--wig-hero-pad, 0.1in) calc(var(--wig-hero-pad, 0.1in) * 0.82);
     text-align: center;
     color: #fff;
     background: linear-gradient(
@@ -407,9 +423,9 @@ const WIG_CARD_STYLES = `
   }
 
   .wig-swatch {
-    width: var(--wig-swatch, 0.18in);
-    height: var(--wig-swatch, 0.18in);
-    margin: 0 auto calc(var(--wig-hero-pad, 0.085in) * 0.45);
+    width: var(--wig-swatch, 0.22in);
+    height: var(--wig-swatch, 0.22in);
+    margin: 0 auto calc(var(--wig-hero-pad, 0.1in) * 0.45);
     border-radius: 999px;
     background: var(--accent);
     border: 2px solid rgba(255, 255, 255, 0.65);
@@ -422,7 +438,7 @@ const WIG_CARD_STYLES = `
 
   .wig-title {
     margin: 0;
-    font-size: var(--wig-title, 9pt);
+    font-size: var(--wig-title, 12pt);
     font-weight: 800;
     line-height: 1.05;
     letter-spacing: 0.03em;
@@ -430,7 +446,7 @@ const WIG_CARD_STYLES = `
   }
 
   .wig-part {
-    margin: 0.03in 0 0;
+    margin: 0.04in 0 0;
     font-size: 0.92em;
     font-weight: 600;
     opacity: 0.92;
@@ -440,7 +456,7 @@ const WIG_CARD_STYLES = `
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    padding: var(--wig-body-pad, 0.05in) 0.09in calc(var(--wig-body-pad, 0.05in) + 0.02in);
+    padding: var(--wig-body-pad, 0.08in) 0.14in calc(var(--wig-body-pad, 0.08in) + 0.03in);
   }
 
   .wig-list {
@@ -487,9 +503,10 @@ const WIG_CARD_STYLES = `
     color: color-mix(in srgb, var(--wig-ink) 75%, var(--wig-muted));
   }
 
+  /* One 4×6 card per page — matches photo paper / borderless 4×6 printers. */
   @page {
-    size: letter;
-    margin: 0.25in;
+    size: ${CARD_WIDTH_IN}in ${CARD_HEIGHT_IN}in;
+    margin: 0;
   }
 
   @media print {
@@ -498,18 +515,33 @@ const WIG_CARD_STYLES = `
     }
 
     .print-toolbar {
-      display: none;
+      display: none !important;
     }
 
     .wig-sheet {
+      display: block;
       padding: 0;
-      gap: 0.15in;
+      gap: 0;
     }
 
     .wig-card {
-      border: 1px solid #ccc;
+      width: ${CARD_WIDTH_IN}in;
+      height: ${CARD_HEIGHT_IN}in;
+      max-width: 100%;
+      max-height: 100%;
+      margin: 0;
+      border: none;
       box-shadow: none;
       border-radius: 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      page-break-after: always;
+      break-after: page;
+    }
+
+    .wig-card:last-child {
+      page-break-after: auto;
+      break-after: auto;
     }
   }
 `;
@@ -517,7 +549,7 @@ const WIG_CARD_STYLES = `
 export function renderWigCardsHtml(cards: WigColorCard[], options?: { title?: string }): string {
   const title = options?.title?.trim() || "Wig inventory cards";
   const cardMarkup = cards.map(renderCard).join("");
-  const countLabel = `${cards.length} card${cards.length === 1 ? "" : "s"} · sorted by color · 3×5 in`;
+  const countLabel = `${cards.length} card${cards.length === 1 ? "" : "s"} · sorted by color · 4×6 in`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -530,7 +562,7 @@ export function renderWigCardsHtml(cards: WigColorCard[], options?: { title?: st
 <body>
   <div class="print-toolbar">
     <button type="button" onclick="window.print()">Print cards</button>
-    <p>${escapeHtml(countLabel)} — up to ${WIGS_PER_CARD} wigs per card; splits when needed. Text shrinks to fit.</p>
+    <p>${escapeHtml(countLabel)} — up to ${WIGS_PER_CARD} wigs per card; one card per page. Set printer paper to 4×6. Text shrinks to fit.</p>
   </div>
   <main class="wig-sheet">${cardMarkup}</main>
 </body>

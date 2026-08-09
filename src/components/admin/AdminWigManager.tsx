@@ -492,7 +492,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
           <div>
             <p className="text-sm font-bold text-closet-brown">Print by color</p>
             <p className="mt-0.5 text-xs text-closet-brown-light">
-              3×5 in cards — up to 14 wigs per card, splits if more. Text shrinks to fit.
+              4×6 in cards — up to 18 wigs per card, one card per page. Set printer paper to 4×6.
             </p>
           </div>
           <Link href="/api/admin/wigs/cards" target="_blank" className="admin-btn-primary shrink-0 text-sm">
@@ -505,7 +505,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
             ["red", "Red"],
             ["orange", "Orange"],
             ["blonde", "Blonde"],
-            ["green", "Green / Teal"],
+            ["green", "Green / Teal / Water"],
             ["blue", "Blue"],
             ["purple", "Purple"],
             ["black", "Black"],
@@ -543,7 +543,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
             ["red", "Red"],
             ["orange", "Orange"],
             ["blonde", "Blonde"],
-            ["green", "Green / Teal"],
+            ["green", "Green / Teal / Water"],
             ["blue", "Blue"],
             ["purple", "Purple"],
             ["black", "Black"],
@@ -574,14 +574,14 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
           <Link href="/api/admin/wigs/labels" target="_blank" className="admin-btn-secondary admin-btn-touch w-full text-sm">
             Print Avery 5260 labels
           </Link>
-          <p className="text-xs text-closet-brown-light">Cards · color pills open 3×5 inventory cards</p>
+          <p className="text-xs text-closet-brown-light">Cards · color pills open 4×6 inventory cards</p>
           <div className="flex flex-wrap gap-2">
             {[
               ["pink", "Pink"],
               ["red", "Red"],
               ["orange", "Orange"],
               ["blonde", "Blonde"],
-              ["green", "Green / Teal"],
+              ["green", "Green / Teal / Water"],
               ["blue", "Blue"],
               ["purple", "Purple"],
               ["black", "Black"],
@@ -606,7 +606,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
               ["red", "Red"],
               ["orange", "Orange"],
               ["blonde", "Blonde"],
-              ["green", "Green / Teal"],
+              ["green", "Green / Teal / Water"],
               ["blue", "Blue"],
               ["purple", "Purple"],
               ["black", "Black"],
