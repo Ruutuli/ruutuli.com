@@ -378,6 +378,13 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
             >
               Print wig cards
             </Link>
+            <Link
+              href="/api/admin/wigs/labels"
+              target="_blank"
+              className="admin-btn-secondary admin-btn-touch hidden text-sm sm:inline-flex"
+            >
+              Print Avery 5260
+            </Link>
             <AdminButton variant="primary" className="admin-btn-touch hidden lg:inline-flex" onClick={openAddWig}>
               <IconPlus />
               Add wig
@@ -402,9 +409,14 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
             <AdminStatCard label="Total" value={stats.total} accent="rose" />
             <AdminStatCard label="Brands" value={stats.brands} accent="blush" />
           </div>
-          <Link href="/api/admin/wigs/cards" target="_blank" className="admin-btn-secondary admin-btn-touch w-full text-sm">
-            Print wig cards
-          </Link>
+          <div className="flex flex-col gap-2">
+            <Link href="/api/admin/wigs/cards" target="_blank" className="admin-btn-secondary admin-btn-touch w-full text-sm">
+              Print wig cards
+            </Link>
+            <Link href="/api/admin/wigs/labels" target="_blank" className="admin-btn-secondary admin-btn-touch w-full text-sm">
+              Print Avery 5260 labels
+            </Link>
+          </div>
         </div>
       </details>
 
@@ -417,7 +429,7 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
             </p>
           </div>
           <Link href="/api/admin/wigs/cards" target="_blank" className="admin-btn-primary shrink-0 text-sm">
-            Print all
+            Print all cards
           </Link>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -446,6 +458,44 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
         </div>
       </AdminCard>
 
+      <AdminCard className="hidden p-4 sm:block sm:p-5 lg:block">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-closet-brown">Avery 5260 labels</p>
+            <p className="mt-0.5 text-xs text-closet-brown-light">
+              30 labels/sheet · character (or brand) · brand · style · length · color
+            </p>
+          </div>
+          <Link href="/api/admin/wigs/labels" target="_blank" className="admin-btn-primary shrink-0 text-sm">
+            Print all labels
+          </Link>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {[
+            ["pink", "Pink"],
+            ["red", "Red"],
+            ["orange", "Orange"],
+            ["blonde", "Blonde"],
+            ["green", "Green / Teal"],
+            ["blue", "Blue"],
+            ["purple", "Purple"],
+            ["black", "Black"],
+            ["gray", "Gray / Silver"],
+            ["white", "White"],
+            ["brown", "Brown"],
+          ].map(([id, label]) => (
+            <Link
+              key={id}
+              href={`/api/admin/wigs/labels?category=${id}`}
+              target="_blank"
+              className="rounded-full bg-closet-blush/50 px-3 py-1 text-xs font-bold text-closet-brown ring-1 ring-closet-pink/50 hover:bg-closet-rose hover:text-white hover:ring-closet-rose"
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      </AdminCard>
+
       <details className="rounded-2xl border border-closet-pink/60 bg-white shadow-closet lg:hidden">
         <summary className="cursor-pointer list-none px-4 py-3 text-sm font-bold text-closet-brown [&::-webkit-details-marker]:hidden">
           Print by color
@@ -454,6 +504,10 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
           <Link href="/api/admin/wigs/cards" target="_blank" className="admin-btn-primary admin-btn-touch w-full text-sm">
             Print all wig cards
           </Link>
+          <Link href="/api/admin/wigs/labels" target="_blank" className="admin-btn-secondary admin-btn-touch w-full text-sm">
+            Print Avery 5260 labels
+          </Link>
+          <p className="text-xs text-closet-brown-light">Cards · color pills open 3×5 inventory cards</p>
           <div className="flex flex-wrap gap-2">
             {[
               ["pink", "Pink"],
@@ -471,6 +525,31 @@ export default function AdminWigManager({ initial }: { initial: Wig[] }) {
               <Link
                 key={id}
                 href={`/api/admin/wigs/cards?category=${id}`}
+                target="_blank"
+                className="admin-btn-touch rounded-full bg-closet-blush/50 px-3 py-2 text-xs font-bold text-closet-brown ring-1 ring-closet-pink/50"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+          <p className="text-xs text-closet-brown-light">Labels · color pills open Avery 5260 sheets</p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["pink", "Pink"],
+              ["red", "Red"],
+              ["orange", "Orange"],
+              ["blonde", "Blonde"],
+              ["green", "Green / Teal"],
+              ["blue", "Blue"],
+              ["purple", "Purple"],
+              ["black", "Black"],
+              ["gray", "Gray / Silver"],
+              ["white", "White"],
+              ["brown", "Brown"],
+            ].map(([id, label]) => (
+              <Link
+                key={`label-${id}`}
+                href={`/api/admin/wigs/labels?category=${id}`}
                 target="_blank"
                 className="admin-btn-touch rounded-full bg-closet-blush/50 px-3 py-2 text-xs font-bold text-closet-brown ring-1 ring-closet-pink/50"
               >
